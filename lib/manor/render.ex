@@ -38,7 +38,7 @@ defmodule Manor.Render do
   @spec to_string(Game.t()) :: String.t()
   def to_string(%Game{} = _game) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.to_string/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.to_string/1")
   end
 
   @doc """
@@ -51,7 +51,7 @@ defmodule Manor.Render do
   @spec render(Game.t()) :: iodata()
   def render(%Game{} = _game) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.render/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.render/1")
   end
 
   @doc """
@@ -66,7 +66,7 @@ defmodule Manor.Render do
   @spec grid(Game.t()) :: iodata()
   def grid(%Game{} = _game) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.grid/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.grid/1")
   end
 
   @doc """
@@ -82,7 +82,7 @@ defmodule Manor.Render do
   @spec cell(Game.t(), Grid.coord()) :: [iodata()]
   def cell(%Game{} = _game, _coord) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.cell/2"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.cell/2")
   end
 
   @doc """
@@ -97,7 +97,7 @@ defmodule Manor.Render do
   @spec status_bar(Game.t()) :: iodata()
   def status_bar(%Game{} = _game) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.status_bar/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.status_bar/1")
   end
 
   @doc """
@@ -119,6 +119,6 @@ defmodule Manor.Render do
   @spec describe(term()) :: iodata()
   def describe(_entry) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Render.describe/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.describe/1")
   end
 end

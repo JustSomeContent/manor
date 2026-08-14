@@ -49,6 +49,6 @@ defmodule Manor.RunConfig do
   @spec default(keyword()) :: t()
   def default(opts) when is_list(opts) do
     # TODO(Part 6)
-    raise Manor.NotImplemented, part: 6, fun: "Manor.RunConfig.default/1"
+    Manor.NotImplemented.todo!(part: 6, fun: "Manor.RunConfig.default/1")
   end
 end

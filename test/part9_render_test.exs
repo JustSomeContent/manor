@@ -55,8 +55,11 @@ defmodule Manor.Part9RenderTest do
 
   describe "9.3 protocols at work" do
     test "9.3-R1 String.Chars for Resources drives the status bar" do
-      assert to_string(%Resources{steps: 17, keys: 1, gems: 3, coins: 5}) ==
-               "Steps 17 | Keys 1 | Gems 3 | Coins 5"
+      # struct!/2 instead of a bare literal: the literal would trip a
+      # compile-time "does not implement String.Chars" warning on every
+      # mix test run until Part 9 implements the protocol.
+      purse = struct!(Resources, steps: 17, keys: 1, gems: 3, coins: 5)
+      assert to_string(purse) == "Steps 17 | Keys 1 | Gems 3 | Coins 5"
 
       status = small_game() |> Render.status_bar() |> IO.iodata_to_binary()
       assert status =~ "Steps 40 | Keys 1 | Gems 2 | Coins 0"

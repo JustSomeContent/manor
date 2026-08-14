@@ -25,7 +25,7 @@ defmodule Manor.CLI do
   @spec play(String.t(), keyword()) :: :ok
   def play(name, opts \\ []) when is_binary(name) and is_list(opts) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.CLI.play/2"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.CLI.play/2")
   end
 
   @doc """
@@ -47,6 +47,6 @@ defmodule Manor.CLI do
   def attach(name) when is_binary(name) do
     # TODO(Part 9)
     _ = {Game, Render, Parser, Server}
-    raise Manor.NotImplemented, part: 9, fun: "Manor.CLI.attach/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.CLI.attach/1")
   end
 end

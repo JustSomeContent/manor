@@ -34,7 +34,7 @@ defmodule Manor.PlacedRoom do
   @spec new(Room.t(), Grid.coord()) :: t()
   def new(%Room{} = _template, {_col, _rank} = _coord) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.PlacedRoom.new/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.new/2")
   end
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Manor.PlacedRoom do
   @spec door(t(), Grid.direction()) :: Room.door() | nil
   def door(%__MODULE__{} = _placed, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.PlacedRoom.door/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.door/2")
   end
 
   @doc """
@@ -64,7 +64,7 @@ defmodule Manor.PlacedRoom do
   @spec unlock(t(), Grid.direction()) :: t()
   def unlock(%__MODULE__{} = _placed, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.PlacedRoom.unlock/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.unlock/2")
   end
 
   @doc """
@@ -76,6 +76,6 @@ defmodule Manor.PlacedRoom do
   @spec record_entry(t()) :: t()
   def record_entry(%__MODULE__{} = _placed) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.PlacedRoom.record_entry/1"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.record_entry/1")
   end
 end

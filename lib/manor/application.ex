@@ -24,6 +24,6 @@ defmodule Manor.Application do
   @impl Application
   def start(_type, _args) do
     # TODO(Part 8)
-    raise Manor.NotImplemented, part: 8, fun: "Manor.Application.start/2"
+    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Application.start/2")
   end
 end

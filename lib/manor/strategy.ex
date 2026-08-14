@@ -68,6 +68,6 @@ defmodule Manor.Strategy.Greedy do
   @impl Manor.Strategy
   def next_command(%Game{} = _game) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Strategy.Greedy.next_command/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Strategy.Greedy.next_command/1")
   end
 end

@@ -36,6 +36,6 @@ defmodule Manor.CLI.Parser do
   @spec parse(String.t()) :: {:ok, parsed()} | {:error, :unknown_command}
   def parse(line) when is_binary(line) do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.CLI.Parser.parse/1"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.CLI.Parser.parse/1")
   end
 end

@@ -21,6 +21,6 @@ defmodule Manor.Rooms.Observatory do
   @impl Manor.Special
   def on_enter(_game) do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Rooms.Observatory.on_enter/1"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Rooms.Observatory.on_enter/1")
   end
 end

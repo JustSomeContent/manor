@@ -19,10 +19,10 @@ defmodule Manor do
   """
   @spec hello() :: :welcome
   def hello do
-    # TODO(Part 0)
-    raise Manor.NotImplemented, part: 0, fun: "Manor.hello/0"
+    :welcome
   end
 
+  @spec start_run(any(), any()) :: none()
   @doc """
   Start a supervised run named `name` (any string) with the given options
   (`:seed` required — see `Manor.RunConfig.default/1`).
@@ -36,7 +36,7 @@ defmodule Manor do
   @spec start_run(String.t(), keyword()) :: DynamicSupervisor.on_start_child()
   def start_run(name, opts) when is_binary(name) and is_list(opts) do
     # TODO(Part 8)
-    raise Manor.NotImplemented, part: 8, fun: "Manor.start_run/2"
+    Manor.NotImplemented.todo!(part: 8, fun: "Manor.start_run/2")
   end
 
   @doc """
@@ -49,7 +49,7 @@ defmodule Manor do
   @spec stop_run(String.t()) :: :ok | {:error, :no_such_run}
   def stop_run(name) when is_binary(name) do
     # TODO(Part 8)
-    raise Manor.NotImplemented, part: 8, fun: "Manor.stop_run/1"
+    Manor.NotImplemented.todo!(part: 8, fun: "Manor.stop_run/1")
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule Manor do
   @spec runs() :: [String.t()]
   def runs do
     # TODO(Part 8)
-    raise Manor.NotImplemented, part: 8, fun: "Manor.runs/0"
+    Manor.NotImplemented.todo!(part: 8, fun: "Manor.runs/0")
   end
 
   @doc """
@@ -75,6 +75,6 @@ defmodule Manor do
   @spec view(String.t()) :: {:ok, Game.t()} | {:error, :no_such_run}
   def view(name) when is_binary(name) do
     # TODO(Part 8)
-    raise Manor.NotImplemented, part: 8, fun: "Manor.view/1"
+    Manor.NotImplemented.todo!(part: 8, fun: "Manor.view/1")
   end
 end

@@ -23,6 +23,6 @@ defmodule Manor.Autoplay do
   def run(strategy, %RunConfig{} = _config, max_commands)
       when is_atom(strategy) and is_integer(max_commands) and max_commands >= 0 do
     # TODO(Part 9)
-    raise Manor.NotImplemented, part: 9, fun: "Manor.Autoplay.run/3"
+    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Autoplay.run/3")
   end
 end

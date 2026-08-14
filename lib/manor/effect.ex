@@ -38,7 +38,7 @@ defmodule Manor.Effect do
   def apply_trigger(_game, %PlacedRoom{} = _placed, trigger)
       when trigger in [:on_place, :on_enter, :per_turn] do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Effect.apply_trigger/3"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Effect.apply_trigger/3")
   end
 
   @doc """
@@ -59,6 +59,6 @@ defmodule Manor.Effect do
   @spec apply_action(Manor.Game.t(), action()) :: Manor.Game.t()
   def apply_action(_game, _action) do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Effect.apply_action/2"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Effect.apply_action/2")
   end
 end

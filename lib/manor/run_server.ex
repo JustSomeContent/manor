@@ -29,7 +29,7 @@ defmodule Manor.RunServer do
   @spec start(RunConfig.t()) :: pid()
   def start(%RunConfig{} = _config) do
     # TODO(Part 7)
-    raise Manor.NotImplemented, part: 7, fun: "Manor.RunServer.start/1"
+    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.start/1")
   end
 
   @doc """
@@ -49,13 +49,13 @@ defmodule Manor.RunServer do
           {:ok, Game.t()} | {:error, Game.error() | :timeout | :server_down}
   def turn(server, _command) when is_pid(server) do
     # TODO(Part 7)
-    raise Manor.NotImplemented, part: 7, fun: "Manor.RunServer.turn/2"
+    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.turn/2")
   end
 
   @doc "Synchronous snapshot of the server's current game state."
   @spec peek(pid()) :: {:ok, Game.t()} | {:error, :timeout | :server_down}
   def peek(server) when is_pid(server) do
     # TODO(Part 7)
-    raise Manor.NotImplemented, part: 7, fun: "Manor.RunServer.peek/1"
+    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.peek/1")
   end
 end

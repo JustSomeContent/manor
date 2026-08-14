@@ -38,7 +38,7 @@ defmodule Manor.DraftPool do
   def draw(%__MODULE__{} = _pool, _rng, eligible?, count)
       when is_function(eligible?, 1) and is_integer(count) and count > 0 do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.DraftPool.draw/4"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.DraftPool.draw/4")
   end
 
   @doc """
@@ -50,6 +50,6 @@ defmodule Manor.DraftPool do
   @spec remove(t(), Room.id()) :: t()
   def remove(%__MODULE__{} = _pool, _room_id) do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.DraftPool.remove/2"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.DraftPool.remove/2")
   end
 end

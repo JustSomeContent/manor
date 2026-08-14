@@ -34,7 +34,7 @@ defmodule Manor.Mansion do
   @spec new(Room.t()) :: t()
   def new(%Room{} = _entrance_template) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.new/1"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.new/1")
   end
 
   @doc """
@@ -46,14 +46,14 @@ defmodule Manor.Mansion do
   @spec fetch(t(), Grid.coord()) :: {:ok, PlacedRoom.t()} | :error
   def fetch(%__MODULE__{} = _mansion, _coord) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.fetch/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.fetch/2")
   end
 
   @doc "Whether the cell at `coord` has been built."
   @spec built?(t(), Grid.coord()) :: boolean()
   def built?(%__MODULE__{} = _mansion, _coord) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.built?/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.built?/2")
   end
 
   @doc """
@@ -66,7 +66,7 @@ defmodule Manor.Mansion do
   @spec place(t(), PlacedRoom.t()) :: {:ok, t()} | {:error, :occupied}
   def place(%__MODULE__{} = _mansion, %PlacedRoom{} = _placed) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.place/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.place/2")
   end
 
   @doc """
@@ -79,7 +79,7 @@ defmodule Manor.Mansion do
   @spec update!(t(), Grid.coord(), (PlacedRoom.t() -> PlacedRoom.t())) :: t()
   def update!(%__MODULE__{} = _mansion, _coord, fun) when is_function(fun, 1) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.update!/3"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.update!/3")
   end
 
   @doc """
@@ -95,7 +95,7 @@ defmodule Manor.Mansion do
   @spec unlock(t(), Grid.coord(), Grid.direction()) :: t()
   def unlock(%__MODULE__{} = _mansion, _coord, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.unlock/3"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.unlock/3")
   end
 
   @doc """
@@ -124,7 +124,7 @@ defmodule Manor.Mansion do
   @spec passage(t(), Grid.coord(), Grid.direction()) :: passage()
   def passage(%__MODULE__{} = _mansion, _coord, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.passage/3"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.passage/3")
   end
 
   @doc """
@@ -137,6 +137,6 @@ defmodule Manor.Mansion do
   @spec can_connect?(Room.t(), Grid.direction()) :: boolean()
   def can_connect?(%Room{} = _template, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Mansion.can_connect?/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.can_connect?/2")
   end
 end

@@ -28,7 +28,7 @@ defmodule Manor.RNG do
   @spec uniform(t(), pos_integer()) :: {pos_integer(), t()}
   def uniform(_rng, n) when is_integer(n) and n > 0 do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.RNG.uniform/2"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.uniform/2")
   end
 
   @doc """
@@ -42,7 +42,7 @@ defmodule Manor.RNG do
   @spec weighted(t(), %{key => pos_integer()}) :: {key, t()} when key: term()
   def weighted(_rng, weights) when is_map(weights) and map_size(weights) > 0 do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.RNG.weighted/2"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.weighted/2")
   end
 
   @doc """
@@ -63,6 +63,6 @@ defmodule Manor.RNG do
   def take_weighted(_rng, items, weight_fun, count)
       when is_list(items) and is_function(weight_fun, 1) and is_integer(count) and count >= 0 do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.RNG.take_weighted/4"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.take_weighted/4")
   end
 end

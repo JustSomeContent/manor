@@ -26,6 +26,6 @@ defmodule Manor.Recipe do
   @spec find([t()], Item.id(), Item.id()) :: {:ok, t()} | :error
   def find(recipes, a, b) when is_list(recipes) and is_atom(a) and is_atom(b) do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Recipe.find/3"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Recipe.find/3")
   end
 end

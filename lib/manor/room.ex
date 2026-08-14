@@ -60,7 +60,7 @@ defmodule Manor.Room do
   @spec has_door?(t(), Grid.direction()) :: boolean()
   def has_door?(%__MODULE__{} = _room, direction) when Grid.is_direction(direction) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Room.has_door?/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Room.has_door?/2")
   end
 
   @doc """
@@ -77,6 +77,6 @@ defmodule Manor.Room do
   @spec allowed_at?(t(), Grid.coord()) :: boolean()
   def allowed_at?(%__MODULE__{} = _room, {_col, _rank} = _coord) do
     # TODO(Part 2)
-    raise Manor.NotImplemented, part: 2, fun: "Manor.Room.allowed_at?/2"
+    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Room.allowed_at?/2")
   end
 end

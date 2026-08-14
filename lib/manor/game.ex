@@ -92,7 +92,7 @@ defmodule Manor.Game do
   @spec new(RunConfig.t()) :: t()
   def new(%RunConfig{} = _config) do
     # TODO(Part 3)
-    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.new/1"
+    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.new/1")
   end
 
   @doc """
@@ -125,7 +125,7 @@ defmodule Manor.Game do
   @spec move(t(), Grid.direction()) :: {:ok, t()} | {:error, error()}
   def move(%__MODULE__{} = _game, direction) when is_direction(direction) do
     # TODO(Part 3) — extended in Parts 4 and 5
-    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.move/2"
+    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.move/2")
   end
 
   @doc """
@@ -138,7 +138,7 @@ defmodule Manor.Game do
   @spec candidates(t()) :: {:ok, [Room.t()]} | {:error, :no_draft_pending}
   def candidates(%__MODULE__{} = _game) do
     # TODO(Part 4)
-    raise Manor.NotImplemented, part: 4, fun: "Manor.Game.candidates/1"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.candidates/1")
   end
 
   @doc """
@@ -171,7 +171,7 @@ defmodule Manor.Game do
   @spec choose_draft(t(), pos_integer()) :: {:ok, t()} | {:error, error()}
   def choose_draft(%__MODULE__{} = _game, index) when is_integer(index) do
     # TODO(Part 4) — extended in Part 5
-    raise Manor.NotImplemented, part: 4, fun: "Manor.Game.choose_draft/2"
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.choose_draft/2")
   end
 
   @doc """
@@ -187,7 +187,7 @@ defmodule Manor.Game do
   @spec buy(t(), atom()) :: {:ok, t()} | {:error, error()}
   def buy(%__MODULE__{} = _game, offer_id) when is_atom(offer_id) do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Game.buy/2"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Game.buy/2")
   end
 
   @doc """
@@ -207,7 +207,7 @@ defmodule Manor.Game do
   @spec combine(t(), Manor.Item.id(), Manor.Item.id()) :: {:ok, t()} | {:error, error()}
   def combine(%__MODULE__{} = _game, a, b) when is_atom(a) and is_atom(b) do
     # TODO(Part 5)
-    raise Manor.NotImplemented, part: 5, fun: "Manor.Game.combine/3"
+    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Game.combine/3")
   end
 
   @typedoc "A parsed player command, as produced by `Manor.CLI.Parser` and `Manor.Strategy` bots."
@@ -227,7 +227,7 @@ defmodule Manor.Game do
   @spec command(t(), command()) :: {:ok, t()} | {:error, error()}
   def command(%__MODULE__{} = _game, _command) do
     # TODO(Part 6)
-    raise Manor.NotImplemented, part: 6, fun: "Manor.Game.command/2"
+    Manor.NotImplemented.todo!(part: 6, fun: "Manor.Game.command/2")
   end
 
   @doc """
@@ -239,14 +239,14 @@ defmodule Manor.Game do
   @spec over?(t()) :: boolean()
   def over?(%__MODULE__{} = _game) do
     # TODO(Part 3)
-    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.over?/1"
+    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.over?/1")
   end
 
   @doc "The day's status, derived from the phase — never stored twice."
   @spec status(t()) :: :active | :won | :out_of_steps
   def status(%__MODULE__{} = _game) do
     # TODO(Part 3)
-    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.status/1"
+    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.status/1")
   end
 
   @doc """
@@ -260,7 +260,7 @@ defmodule Manor.Game do
   @spec transcript(t()) :: [term()]
   def transcript(%__MODULE__{} = _game) do
     # TODO(Part 3)
-    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.transcript/1"
+    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.transcript/1")
   end
 
   @doc """
@@ -278,6 +278,6 @@ defmodule Manor.Game do
         }
   def summary(%__MODULE__{} = _game) do
     # TODO(Part 6)
-    raise Manor.NotImplemented, part: 6, fun: "Manor.Game.summary/1"
+    Manor.NotImplemented.todo!(part: 6, fun: "Manor.Game.summary/1")
   end
 end
