@@ -50,11 +50,8 @@ defmodule Manor.Resources do
   def spend(%__MODULE__{} = resources, kind, amount)
       when is_kind(kind) and is_integer(amount) and amount > 0 do
     case Map.fetch!(resources, kind) do
-      {:ok, current_amount} when current_amount - amount >= 0 ->
-        {:ok, Map.update!(resources, kind, &(&1 - amount))}
-
-      _ ->
-        {:error, {:insufficient, kind}}
+      have when have >= amount -> {:ok, Map.put(resources, kind, have - amount)}
+      _short -> {:error, {:insufficient, kind}}
     end
   end
 
@@ -67,9 +64,6 @@ defmodule Manor.Resources do
   """
   @spec get(t(), kind()) :: non_neg_integer()
   def get(%__MODULE__{} = resources, kind) when is_kind(kind) do
-    case Map.fetch(resources, kind) do
-      {:ok, value} -> value
-      _ -> {:error, {:insufficient, kind}}
-    end
+    Map.fetch!(resources, kind)
   end
 end
