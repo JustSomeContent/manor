@@ -31,10 +31,9 @@ defmodule Manor.Resources do
   say why.
   """
   @spec grant(t(), kind(), pos_integer()) :: t()
-  def grant(%__MODULE__{} = _resources, kind, amount)
+  def grant(%__MODULE__{} = resources, kind, amount)
       when is_kind(kind) and is_integer(amount) and amount > 0 do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Resources.grant/3"
+    Map.update!(resources, kind, &(&1 + amount))
   end
 
   @doc """
@@ -48,10 +47,15 @@ defmodule Manor.Resources do
   or two function heads. No `if` needed.
   """
   @spec spend(t(), kind(), pos_integer()) :: {:ok, t()} | {:error, {:insufficient, kind()}}
-  def spend(%__MODULE__{} = _resources, kind, amount)
+  def spend(%__MODULE__{} = resources, kind, amount)
       when is_kind(kind) and is_integer(amount) and amount > 0 do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Resources.spend/3"
+    case Map.fetch!(resources, kind) do
+      {:ok, current_amount} when current_amount - amount >= 0 ->
+        {:ok, Map.update!(resources, kind, &(&1 - amount))}
+
+      _ ->
+        {:error, {:insufficient, kind}}
+    end
   end
 
   @doc """
@@ -62,8 +66,10 @@ defmodule Manor.Resources do
   for a resource that doesn't exist is a bug, not a condition.
   """
   @spec get(t(), kind()) :: non_neg_integer()
-  def get(%__MODULE__{} = _resources, kind) when is_kind(kind) do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Resources.get/2"
+  def get(%__MODULE__{} = resources, kind) when is_kind(kind) do
+    case Map.fetch(resources, kind) do
+      {:ok, value} -> value
+      _ -> {:error, {:insufficient, kind}}
+    end
   end
 end

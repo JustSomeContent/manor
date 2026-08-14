@@ -38,10 +38,8 @@ defmodule Manor.Grid do
   for anything else.
   """
   @spec in_bounds?(term()) :: boolean()
-  def in_bounds?(_term) do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Grid.in_bounds?/1"
-  end
+  def in_bounds?({col, rank}) when col in 1..@columns and rank in 1..@ranks, do: true
+  def in_bounds?(_), do: false
 
   @doc """
   The neighboring coordinate one cell in `direction`, or `{:error, :off_grid}`
@@ -57,9 +55,16 @@ defmodule Manor.Grid do
   One clause per direction; validate the result with `in_bounds?/1`.
   """
   @spec step(coord(), direction()) :: {:ok, coord()} | {:error, :off_grid}
-  def step({_col, _rank} = _coord, direction) when is_direction(direction) do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Grid.step/2"
+  def step({col, rank}, direction) when is_direction(direction) do
+    candidate_coord =
+      case direction do
+        :north -> {col, rank + 1}
+        :east -> {col + 1, rank}
+        :south -> {col, rank - 1}
+        :west -> {col - 1, rank}
+      end
+
+    if in_bounds?(candidate_coord), do: {:ok, candidate_coord}, else: {:error, :off_grid}
   end
 
   @doc """
@@ -75,10 +80,10 @@ defmodule Manor.Grid do
       :west
   """
   @spec opposite(direction()) :: direction()
-  def opposite(direction) when is_direction(direction) do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Grid.opposite/1"
-  end
+  def opposite(:north), do: :south
+  def opposite(:south), do: :north
+  def opposite(:east), do: :west
+  def opposite(:west), do: :east
 
   @doc """
   Every coordinate on the grid, column-major, for renderers and tests.
@@ -89,7 +94,6 @@ defmodule Manor.Grid do
   """
   @spec all_coords() :: [coord()]
   def all_coords do
-    # TODO(Part 1)
-    raise Manor.NotImplemented, part: 1, fun: "Manor.Grid.all_coords/0"
+    for rank <- 1..@ranks, col <- 1..@columns, do: {col, rank}
   end
 end
