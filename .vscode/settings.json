@@ -1,0 +1,10 @@
+{
+  // Used when manor/ is opened as the workspace root (recommended for the lab).
+  "[elixir]": {
+    "editor.defaultFormatter": "JakeBecker.elixir-ls",
+    "editor.formatOnSave": true
+  },
+  "[phoenix-heex]": {
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
+  }
+}
