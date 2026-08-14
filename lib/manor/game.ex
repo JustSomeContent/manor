@@ -1,0 +1,283 @@
+defmodule Manor.Game do
+  @moduledoc """
+  The whole game, as one immutable value and the pure functions that
+  advance it. This is the *functional core* — no processes, no IO, no
+  hidden state. Part 8 wraps it in a GenServer without changing a line.
+
+  ## Phases
+
+  The `phase` field is a tagged sum type:
+
+    * `:awaiting_command` — the player may move, buy, or combine
+    * `{:drafting, %Manor.Game.Draft{}}` — a draft must be resolved first
+    * `{:ended, :won | :out_of_steps}` — the day is over
+
+  One field, three modes: "game over *and* draft pending" is
+  unrepresentable, and every public function dispatches on the phase with
+  multi-clause heads instead of if/else pyramids.
+
+  ## Error philosophy
+
+  `{:error, reason}` means the command was **rejected and the state is
+  unchanged** — the caller still holds the same game and may try something
+  else. Running out of steps and winning are not errors; they are legal
+  transitions returned as `{:ok, game}` with an `{:ended, _}` phase.
+
+  ## How this module grows
+
+  You build it across three parts. Part 3: `new/1`, `move/2` through built
+  rooms (walls, locks-with-keys, day-end, win), `over?/1`, `status/1`,
+  `transcript/1`. Part 4: the drafting flow (`move/2` into unbuilt cells,
+  `candidates/1`, `choose_draft/2`). Part 5: effects wired into entering
+  and placing, lockpicks as key substitutes, `buy/2`, `combine/3`.
+  Part 6: `command/2` and `summary/1`.
+  """
+
+  alias Manor.{DraftPool, Grid, Mansion, Resources, RNG, Room, RunConfig}
+  alias Manor.Game.Draft
+
+  import Manor.Grid, only: [is_direction: 1]
+
+  @enforce_keys [:config, :mansion, :player, :resources, :inventory, :pool, :rng, :phase]
+  defstruct [
+    :config,
+    :mansion,
+    :player,
+    :resources,
+    :inventory,
+    :pool,
+    :rng,
+    :phase,
+    turn: 0,
+    log: []
+  ]
+
+  @type phase :: :awaiting_command | {:drafting, Draft.t()} | {:ended, :won | :out_of_steps}
+
+  @type t :: %__MODULE__{
+          config: RunConfig.t(),
+          mansion: Mansion.t(),
+          player: Grid.coord(),
+          resources: Resources.t(),
+          inventory: %{Manor.Item.id() => pos_integer()},
+          pool: DraftPool.t(),
+          rng: RNG.t(),
+          phase: phase(),
+          turn: non_neg_integer(),
+          log: [term()]
+        }
+
+  @type error ::
+          :game_over
+          | :draft_pending
+          | :no_draft_pending
+          | :wall
+          | :locked_no_key
+          | :invalid_choice
+          | :not_in_shop
+          | :not_in_workshop
+          | :unknown_offer
+          | :unknown_recipe
+          | {:insufficient, Resources.kind()}
+          | {:missing_item, Manor.Item.id()}
+
+  @doc """
+  A fresh day from a config: entrance placed, player standing in it.
+
+  ## Part 3 hints
+  Everything the struct needs comes from the config or a constructor you
+  already have (`Mansion.new/1`, `DraftPool.new/1`, `RNG.new/1`). Empty
+  inventory, `:awaiting_command`, turn 0, empty log.
+  """
+  @spec new(RunConfig.t()) :: t()
+  def new(%RunConfig{} = _config) do
+    # TODO(Part 3)
+    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.new/1"
+  end
+
+  @doc """
+  Attempt to walk one cell in `direction`.
+
+  The rulebook, in order: a passage must exist; a locked one must be paid
+  for (a key — or, from Part 5, a lockpick — either permanently unlocks the
+  door); the step is spent; then you either enter the built room or the
+  move becomes a draft (`{:drafting, _}` phase — resolve it with
+  `choose_draft/2`).
+
+  Attempting a viable move with zero steps ends the day: that returns
+  `{:ok, game}` with phase `{:ended, :out_of_steps}` — see the module doc.
+
+  ## Part 3 hints
+  Two rejection clauses matching the phase, then the real one: a `with`
+  chain over three private helpers — passage lookup (`Mansion.passage/3`,
+  turning `:wall` into `{:error, :wall}`), lock payment, step payment —
+  then a `case` on the passage kind: `{:built, _, dest}` enters (Part 3),
+  `{:unbuilt, _, dest}` begins a draft (Part 4). Let the day-end path
+  return a non-matching tuple like `{:day_over, game}` from the step
+  helper and convert it to `{:ok, game}` in the `with`'s `else`.
+
+  Entering a room (a private helper you'll reuse from `choose_draft/2`):
+  record the entry on the placed room (`Mansion.update!/3`), set the
+  player, log `{:moved, dest}`, bump the turn, and end the day as
+  `{:ended, :won}` if the room's category is `:goal`. Part 5 extends this
+  same helper with effect triggers.
+  """
+  @spec move(t(), Grid.direction()) :: {:ok, t()} | {:error, error()}
+  def move(%__MODULE__{} = _game, direction) when is_direction(direction) do
+    # TODO(Part 3) — extended in Parts 4 and 5
+    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.move/2"
+  end
+
+  @doc """
+  The candidate templates of the pending draft.
+
+  ## Part 4 hints
+  Two clauses; the happy one pattern-matches the draft straight out of the
+  phase tuple.
+  """
+  @spec candidates(t()) :: {:ok, [Room.t()]} | {:error, :no_draft_pending}
+  def candidates(%__MODULE__{} = _game) do
+    # TODO(Part 4)
+    raise Manor.NotImplemented, part: 4, fun: "Manor.Game.candidates/1"
+  end
+
+  @doc """
+  Resolve the pending draft by choosing candidate `index` (1-based).
+
+  Pays the room's gem cost, stamps and places the instance (the door you
+  walked in through is propped open, even on a room that keeps it locked
+  for latecomers), removes the template from the pool, and walks you in.
+  From Part 5 it also runs `:on_place` effects between placing and
+  entering.
+
+  ## Part 4 hints
+  Phase-dispatch clauses again ({:ended, _} → `:game_over`, no draft →
+  `:no_draft_pending`). The happy clause: a `with` over index validation
+  (`{:error, :invalid_choice}` outside `1..length(candidates)`) and gem
+  payment, then `PlacedRoom.new/2` |> `PlacedRoom.unlock/2` (with
+  `Grid.opposite(draft.entered_via)`), `Mansion.place/2` asserted with
+  `{:ok, mansion} = ...` (occupied is impossible here — why?),
+  `DraftPool.remove/2`, phase back to `:awaiting_command`, log
+  `{:placed, id, coord}`, and the same enter-room helper `move/2` uses.
+
+  And where does the draft come from in the first place? Extend `move/2`'s
+  unbuilt branch: filter-worthy candidates are those that can connect back
+  (`Mansion.can_connect?/2`) *and* are allowed at the destination
+  (`Room.allowed_at?/2`); `DraftPool.draw/4` with `config.draft_size`,
+  falling back to `[config.fallback]` when nothing fits; wrap in a
+  `%Draft{}` inside the phase, log `{:drafting, dest}`, and don't forget
+  the rng came back changed.
+  """
+  @spec choose_draft(t(), pos_integer()) :: {:ok, t()} | {:error, error()}
+  def choose_draft(%__MODULE__{} = _game, index) when is_integer(index) do
+    # TODO(Part 4) — extended in Part 5
+    raise Manor.NotImplemented, part: 4, fun: "Manor.Game.choose_draft/2"
+  end
+
+  @doc """
+  Buy a shop offer by id. Only works while standing in a `:shop` room.
+
+  ## Part 5 hints
+  Phase-dispatch clauses, then a `with`: room category check (a private
+  helper both this and `combine/3` want), offer lookup by id
+  (`{:error, :unknown_offer}`), `Resources.spend/3` in coins, then
+  `Manor.Effect.apply_action/2` on the offer's `grants` — the shop reuses
+  the effect vocabulary. Log `{:bought, offer_id}`.
+  """
+  @spec buy(t(), atom()) :: {:ok, t()} | {:error, error()}
+  def buy(%__MODULE__{} = _game, offer_id) when is_atom(offer_id) do
+    # TODO(Part 5)
+    raise Manor.NotImplemented, part: 5, fun: "Manor.Game.buy/2"
+  end
+
+  @doc """
+  Combine two inventory items in a `:workshop` room.
+
+  Note there is no rollback code for "first item taken, second missing":
+  on any error the *caller's* game value was never touched — immutability
+  is the transaction.
+
+  ## Part 5 hints
+  Category check, `Manor.Recipe.find/3` (`:error` → `:unknown_recipe`),
+  then take each input from the counted bag (a private `take_item/2`
+  returning `{:error, {:missing_item, id}}` when absent — `combine cog cog`
+  with one cog must fail on the *second* take), grant the output via
+  `Effect.apply_action/2`, log `{:crafted, output}`.
+  """
+  @spec combine(t(), Manor.Item.id(), Manor.Item.id()) :: {:ok, t()} | {:error, error()}
+  def combine(%__MODULE__{} = _game, a, b) when is_atom(a) and is_atom(b) do
+    # TODO(Part 5)
+    raise Manor.NotImplemented, part: 5, fun: "Manor.Game.combine/3"
+  end
+
+  @typedoc "A parsed player command, as produced by `Manor.CLI.Parser` and `Manor.Strategy` bots."
+  @type command ::
+          {:move, Grid.direction()}
+          | {:choose, pos_integer()}
+          | {:buy, atom()}
+          | {:combine, Manor.Item.id(), Manor.Item.id()}
+
+  @doc """
+  Apply a parsed command — one entry point for scripted drivers.
+
+  ## Part 6 hints
+  Pure dispatch: one clause per command shape, each a one-line delegation
+  to the function you already wrote. No `case` needed anywhere.
+  """
+  @spec command(t(), command()) :: {:ok, t()} | {:error, error()}
+  def command(%__MODULE__{} = _game, _command) do
+    # TODO(Part 6)
+    raise Manor.NotImplemented, part: 6, fun: "Manor.Game.command/2"
+  end
+
+  @doc """
+  Whether the day is over (won or out of steps).
+
+  ## Part 3 hints
+  Two heads, matching the phase. No `if`.
+  """
+  @spec over?(t()) :: boolean()
+  def over?(%__MODULE__{} = _game) do
+    # TODO(Part 3)
+    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.over?/1"
+  end
+
+  @doc "The day's status, derived from the phase — never stored twice."
+  @spec status(t()) :: :active | :won | :out_of_steps
+  def status(%__MODULE__{} = _game) do
+    # TODO(Part 3)
+    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.status/1"
+  end
+
+  @doc """
+  The action log, oldest first.
+
+  ## Part 3 hints
+  Internally the log is newest-first, because prepending to a list is O(1)
+  and appending is O(n). This function is where the reversal happens —
+  once, at the edge.
+  """
+  @spec transcript(t()) :: [term()]
+  def transcript(%__MODULE__{} = _game) do
+    # TODO(Part 3)
+    raise Manor.NotImplemented, part: 3, fun: "Manor.Game.transcript/1"
+  end
+
+  @doc """
+  An end-of-day report.
+
+  ## Part 6 hints
+  `status/1`, the turn counter, `map_size/1` of the mansion minus the
+  entrance, and the purse.
+  """
+  @spec summary(t()) :: %{
+          outcome: :active | :won | :out_of_steps,
+          turns: non_neg_integer(),
+          rooms_placed: non_neg_integer(),
+          resources: Resources.t()
+        }
+  def summary(%__MODULE__{} = _game) do
+    # TODO(Part 6)
+    raise Manor.NotImplemented, part: 6, fun: "Manor.Game.summary/1"
+  end
+end
