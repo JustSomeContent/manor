@@ -27,12 +27,15 @@ defmodule Manor.Game do
 
   You build it across three parts. Part 3: `new/1`, `move/2` through built
   rooms (walls, locks-with-keys, day-end, win), `over?/1`, `status/1`,
-  `transcript/1`. Part 4: the drafting flow (`move/2` into unbuilt cells,
-  `candidates/1`, `choose_draft/2`). Part 5: effects wired into entering
-  and placing, lockpicks as key substitutes, `buy/2`, `combine/3`.
-  Part 6: `command/2` and `summary/1`.
+  `transcript/1`, and `command/2` (the test drivers speak command tuples
+  from Part 3 on; clauses for not-yet-written functions just delegate to
+  their skeletons). Part 4: the drafting flow (`move/2` into unbuilt
+  cells, `candidates/1`, `choose_draft/2`). Part 5: effects wired into
+  entering and placing, lockpicks as key substitutes, `buy/2`,
+  `combine/3`. Part 6: `summary/1`.
   """
 
+  alias Manor.PlacedRoom
   alias Manor.{DraftPool, Grid, Mansion, Resources, RNG, Room, RunConfig}
   alias Manor.Game.Draft
 
@@ -90,9 +93,17 @@ defmodule Manor.Game do
   inventory, `:awaiting_command`, turn 0, empty log.
   """
   @spec new(RunConfig.t()) :: t()
-  def new(%RunConfig{} = _config) do
-    # TODO(Part 3)
-    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.new/1")
+  def new(%RunConfig{} = config) do
+    %__MODULE__{
+      config: config,
+      mansion: Mansion.new(config.entrance),
+      player: Grid.entrance(),
+      resources: config.starting_resources,
+      inventory: %{},
+      pool: DraftPool.new(config.rooms),
+      rng: RNG.new(config.seed),
+      phase: :awaiting_command
+    }
   end
 
   @doc """
@@ -123,9 +134,83 @@ defmodule Manor.Game do
   same helper with effect triggers.
   """
   @spec move(t(), Grid.direction()) :: {:ok, t()} | {:error, error()}
-  def move(%__MODULE__{} = _game, direction) when is_direction(direction) do
-    # TODO(Part 3) — extended in Parts 4 and 5
-    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.move/2")
+  def move(%__MODULE__{phase: {:drafting, _}}, _direction), do: {:error, :draft_pending}
+  def move(%__MODULE__{phase: {:ended, _}}, _direction), do: {:error, :game_over}
+
+  def move(%__MODULE__{phase: :awaiting_command} = game, direction)
+      when is_direction(direction) do
+    with {:ok, passage} <- passage_from_player(game, direction),
+         {:ok, game} <- pass_lock(game, direction, passage),
+         {:ok, game} <- pay_step(game) do
+      case passage do
+        {:unbuilt, _lock, dest} -> {:ok, begin_draft(game, dest, direction)}
+        {:built, _lock, dest} -> {:ok, enter_room(game, dest)}
+      end
+    else
+      {:day_over, game} -> {:ok, game}
+      {:error, _reason} = error -> error
+    end
+  end
+
+  defp passage_from_player(game, direction) do
+    case Mansion.passage(game.mansion, game.player, direction) do
+      :wall -> {:error, :wall}
+      passage -> {:ok, passage}
+    end
+  end
+
+  defp pass_lock(game, _direction, {_kind, :open, _dest}), do: {:ok, game}
+
+  defp pass_lock(game, direction, {_kind, :locked, _dest}) do
+    case Resources.spend(game.resources, :keys, 1) do
+      {:ok, resources} ->
+        {:ok, unlock_ahead(%{game | resources: resources}, direction, :key)}
+
+      {:error, {:insufficient, :keys}} ->
+        # Part 5 slots the lockpick fallback here
+        {:error, :locked_no_key}
+    end
+  end
+
+  defp unlock_ahead(game, direction, opened_with) do
+    %{game | mansion: Mansion.unlock(game.mansion, game.player, direction)}
+    |> log_entry({:unlocked, opened_with})
+  end
+
+  defp pay_step(game) do
+    case Resources.spend(game.resources, :steps, 1) do
+      {:ok, resources} ->
+        {:ok, %{game | resources: resources}}
+
+      {:error, {:insufficient, :steps}} ->
+        {:day_over,
+         %{game | phase: {:ended, :out_of_steps}} |> log_entry({:day_over, :out_of_steps})}
+    end
+  end
+
+  defp enter_room(game, dest) do
+    mansion = Mansion.update!(game.mansion, dest, &PlacedRoom.record_entry/1)
+    game = %{game | mansion: mansion, player: dest} |> log_entry({:moved, dest})
+
+    {:ok, placed} = Mansion.fetch(game.mansion, dest)
+
+    game
+    # part 5 inserts effect triggers before this
+    |> Map.update!(:turn, &(&1 + 1))
+    |> check_win(placed)
+  end
+
+  defp check_win(game, %PlacedRoom{room: %Room{category: :goal}}) do
+    %{game | phase: {:ended, :won}} |> log_entry({:won, game.player})
+  end
+
+  defp check_win(game, %PlacedRoom{}), do: game
+
+  defp log_entry(game, entry), do: %{game | log: [entry | game.log]}
+
+  defp begin_draft(%__MODULE__{} = _game, _dest, _direction) do
+    # TODO(Part 4)
+    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.begin_draft/3")
   end
 
   @doc """
@@ -220,15 +305,17 @@ defmodule Manor.Game do
   @doc """
   Apply a parsed command — one entry point for scripted drivers.
 
-  ## Part 6 hints
+  ## Part 3 hints
   Pure dispatch: one clause per command shape, each a one-line delegation
-  to the function you already wrote. No `case` needed anywhere.
+  to the target function. No `case` needed anywhere. Delegating to a
+  still-skeletal function is fine — the clause only runs when that shape
+  is actually sent, and by then you'll have written it.
   """
   @spec command(t(), command()) :: {:ok, t()} | {:error, error()}
-  def command(%__MODULE__{} = _game, _command) do
-    # TODO(Part 6)
-    Manor.NotImplemented.todo!(part: 6, fun: "Manor.Game.command/2")
-  end
+  def command(%__MODULE__{} = game, {:move, direction}), do: move(game, direction)
+  def command(%__MODULE__{} = game, {:choose, index}), do: choose_draft(game, index)
+  def command(%__MODULE__{} = game, {:buy, offer_id}), do: buy(game, offer_id)
+  def command(%__MODULE__{} = game, {:combine, id_1, id_2}), do: combine(game, id_1, id_2)
 
   @doc """
   Whether the day is over (won or out of steps).
@@ -237,17 +324,13 @@ defmodule Manor.Game do
   Two heads, matching the phase. No `if`.
   """
   @spec over?(t()) :: boolean()
-  def over?(%__MODULE__{} = _game) do
-    # TODO(Part 3)
-    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.over?/1")
-  end
+  def over?(%__MODULE__{phase: {:ended, _}}), do: true
+  def over?(%__MODULE__{}), do: false
 
   @doc "The day's status, derived from the phase — never stored twice."
   @spec status(t()) :: :active | :won | :out_of_steps
-  def status(%__MODULE__{} = _game) do
-    # TODO(Part 3)
-    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.status/1")
-  end
+  def status(%__MODULE__{phase: {:ended, reason}}), do: reason
+  def status(%__MODULE__{}), do: :active
 
   @doc """
   The action log, oldest first.
@@ -258,10 +341,7 @@ defmodule Manor.Game do
   once, at the edge.
   """
   @spec transcript(t()) :: [term()]
-  def transcript(%__MODULE__{} = _game) do
-    # TODO(Part 3)
-    Manor.NotImplemented.todo!(part: 3, fun: "Manor.Game.transcript/1")
-  end
+  def transcript(%__MODULE__{log: log}), do: Enum.reverse(log)
 
   @doc """
   An end-of-day report.
