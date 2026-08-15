@@ -58,9 +58,8 @@ defmodule Manor.Room do
   `Map.has_key?/2` — one line.
   """
   @spec has_door?(t(), Grid.direction()) :: boolean()
-  def has_door?(%__MODULE__{} = _room, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Room.has_door?/2")
+  def has_door?(%__MODULE__{} = room, direction) when Grid.is_direction(direction) do
+    Map.has_key?(room.doors, direction)
   end
 
   @doc """
@@ -75,8 +74,10 @@ defmodule Manor.Room do
   the rank straight out of the coordinate tuple.
   """
   @spec allowed_at?(t(), Grid.coord()) :: boolean()
-  def allowed_at?(%__MODULE__{} = _room, {_col, _rank} = _coord) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Room.allowed_at?/2")
-  end
+  def allowed_at?(%__MODULE__{category: :entrance}, _coord), do: false
+
+  def allowed_at?(%__MODULE__{category: :goal}, {_col, rank}),
+    do: rank == Grid.goal_rank()
+
+  def allowed_at?(%__MODULE__{}, {_col, rank}), do: rank != Grid.goal_rank()
 end

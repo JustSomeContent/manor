@@ -32,9 +32,8 @@ defmodule Manor.PlacedRoom do
   if you forget a field.
   """
   @spec new(Room.t(), Grid.coord()) :: t()
-  def new(%Room{} = _template, {_col, _rank} = _coord) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.new/2")
+  def new(%Room{} = template, coord) do
+    %__MODULE__{room: template, coord: coord, doors: template.doors, entered_count: 0}
   end
 
   @doc """
@@ -46,9 +45,8 @@ defmodule Manor.PlacedRoom do
   want to expose.
   """
   @spec door(t(), Grid.direction()) :: Room.door() | nil
-  def door(%__MODULE__{} = _placed, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.door/2")
+  def door(%__MODULE__{doors: doors}, direction) when Grid.is_direction(direction) do
+    Map.get(doors, direction)
   end
 
   @doc """
@@ -62,9 +60,11 @@ defmodule Manor.PlacedRoom do
   in a `case` — the other patterns fall through to "return it unchanged".
   """
   @spec unlock(t(), Grid.direction()) :: t()
-  def unlock(%__MODULE__{} = _placed, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.unlock/2")
+  def unlock(%__MODULE__{} = placed, direction) when Grid.is_direction(direction) do
+    case placed.doors do
+      %{^direction => :locked} -> %{placed | doors: Map.put(placed.doors, direction, :open)}
+      _ -> placed
+    end
   end
 
   @doc """
@@ -74,8 +74,7 @@ defmodule Manor.PlacedRoom do
   Struct update syntax: `%{placed | entered_count: ...}`.
   """
   @spec record_entry(t()) :: t()
-  def record_entry(%__MODULE__{} = _placed) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.PlacedRoom.record_entry/1")
+  def record_entry(%__MODULE__{} = placed) do
+    %{placed | entered_count: placed.entered_count + 1}
   end
 end

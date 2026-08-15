@@ -32,9 +32,9 @@ defmodule Manor.Mansion do
   One map literal with one key.
   """
   @spec new(Room.t()) :: t()
-  def new(%Room{} = _entrance_template) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.new/1")
+  def new(%Room{} = entrance_template) do
+    entrance = PlacedRoom.new(entrance_template, Grid.entrance())
+    %__MODULE__{rooms: %{Grid.entrance() => entrance}}
   end
 
   @doc """
@@ -44,17 +44,11 @@ defmodule Manor.Mansion do
   This is `Map.fetch/2` wearing a domain hat — and that's the point.
   """
   @spec fetch(t(), Grid.coord()) :: {:ok, PlacedRoom.t()} | :error
-  def fetch(%__MODULE__{} = _mansion, _coord) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.fetch/2")
-  end
+  def fetch(%__MODULE__{rooms: rooms}, coord), do: Map.fetch(rooms, coord)
 
   @doc "Whether the cell at `coord` has been built."
   @spec built?(t(), Grid.coord()) :: boolean()
-  def built?(%__MODULE__{} = _mansion, _coord) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.built?/2")
-  end
+  def built?(%__MODULE__{rooms: rooms}, coord), do: Map.has_key?(rooms, coord)
 
   @doc """
   Place a room instance into its cell.
@@ -64,9 +58,11 @@ defmodule Manor.Mansion do
   collision — `built?/2` first, or pattern match on `fetch/2`.
   """
   @spec place(t(), PlacedRoom.t()) :: {:ok, t()} | {:error, :occupied}
-  def place(%__MODULE__{} = _mansion, %PlacedRoom{} = _placed) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.place/2")
+  def place(%__MODULE__{} = mansion, %PlacedRoom{coord: coord} = placed) do
+    case(built?(mansion, coord)) do
+      true -> {:error, :occupied}
+      false -> {:ok, %{mansion | rooms: Map.put(mansion.rooms, coord, placed)}}
+    end
   end
 
   @doc """
@@ -77,9 +73,8 @@ defmodule Manor.Mansion do
   `Map.update!/3`. The `!` is the design decision.
   """
   @spec update!(t(), Grid.coord(), (PlacedRoom.t() -> PlacedRoom.t())) :: t()
-  def update!(%__MODULE__{} = _mansion, _coord, fun) when is_function(fun, 1) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.update!/3")
+  def update!(%__MODULE__{} = mansion, coord, fun) when is_function(fun, 1) do
+    %{mansion | rooms: Map.update!(mansion.rooms, coord, fun)}
   end
 
   @doc """
@@ -93,9 +88,14 @@ defmodule Manor.Mansion do
   is "fine, just the one side then".
   """
   @spec unlock(t(), Grid.coord(), Grid.direction()) :: t()
-  def unlock(%__MODULE__{} = _mansion, _coord, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.unlock/3")
+  def unlock(%__MODULE__{} = mansion, coord, direction) when Grid.is_direction(direction) do
+    mansion = update!(mansion, coord, &PlacedRoom.unlock(&1, direction))
+
+    with {:ok, neighbor} <- Grid.step(coord, direction), true <- built?(mansion, neighbor) do
+      update!(mansion, neighbor, &PlacedRoom.unlock(&1, Grid.opposite(direction)))
+    else
+      _ -> mansion
+    end
   end
 
   @doc """
@@ -122,10 +122,32 @@ defmodule Manor.Mansion do
   `fetch/2`, then the neighbor's opposite door.
   """
   @spec passage(t(), Grid.coord(), Grid.direction()) :: passage()
-  def passage(%__MODULE__{} = _mansion, _coord, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.passage/3")
+  def passage(%__MODULE__{} = mansion, coord, direction) when Grid.is_direction(direction) do
+    {:ok, here} = fetch(mansion, coord)
+
+    case {PlacedRoom.door(here, direction), Grid.step(coord, direction)} do
+      {nil, _} ->
+        :wall
+
+      {_our_door, {:error, :off_grid}} ->
+        :wall
+
+      {our_door, {:ok, dest}} ->
+        case fetch(mansion, dest) do
+          :error ->
+            {:unbuilt, our_door, dest}
+
+          {:ok, there} ->
+            case PlacedRoom.door(there, Grid.opposite(direction)) do
+              nil -> :wall
+              their_door -> {:built, combine_locks(our_door, their_door), dest}
+            end
+        end
+    end
   end
+
+  defp combine_locks(:open, :open), do: :open
+  defp combine_locks(_, _), do: :locked
 
   @doc """
   May `template` be drafted into a cell entered while moving `direction`?
@@ -135,8 +157,7 @@ defmodule Manor.Mansion do
   Compose two functions you already have.
   """
   @spec can_connect?(Room.t(), Grid.direction()) :: boolean()
-  def can_connect?(%Room{} = _template, direction) when Grid.is_direction(direction) do
-    # TODO(Part 2)
-    Manor.NotImplemented.todo!(part: 2, fun: "Manor.Mansion.can_connect?/2")
+  def can_connect?(%Room{} = template, direction) when Grid.is_direction(direction) do
+    Room.has_door?(template, Grid.opposite(direction))
   end
 end
