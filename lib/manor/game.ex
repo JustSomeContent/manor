@@ -208,11 +208,6 @@ defmodule Manor.Game do
 
   defp log_entry(game, entry), do: %{game | log: [entry | game.log]}
 
-  defp begin_draft(%__MODULE__{} = _game, _dest, _direction) do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.begin_draft/3")
-  end
-
   @doc """
   The candidate templates of the pending draft.
 
@@ -221,10 +216,8 @@ defmodule Manor.Game do
   phase tuple.
   """
   @spec candidates(t()) :: {:ok, [Room.t()]} | {:error, :no_draft_pending}
-  def candidates(%__MODULE__{} = _game) do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.candidates/1")
-  end
+  def candidates(%__MODULE__{phase: {:drafting, draft}}), do: {:ok, draft.candidates}
+  def candidates(%__MODULE__{}), do: {:error, :no_draft_pending}
 
   @doc """
   Resolve the pending draft by choosing candidate `index` (1-based).
@@ -254,10 +247,58 @@ defmodule Manor.Game do
   the rng came back changed.
   """
   @spec choose_draft(t(), pos_integer()) :: {:ok, t()} | {:error, error()}
-  def choose_draft(%__MODULE__{} = _game, index) when is_integer(index) do
-    # TODO(Part 4) — extended in Part 5
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.Game.choose_draft/2")
+  def choose_draft(%__MODULE__{phase: {:ended, _}}, _index), do: {:error, :game_over}
+
+  def choose_draft(%__MODULE__{phase: {:drafting, draft}} = game, index)
+      when is_integer(index) do
+    with {:ok, template} <- pick_candidate(draft.candidates, index),
+         {:ok, resources} <- pay_gems(game.resources, template.gem_cost) do
+      placed =
+        template
+        |> PlacedRoom.new(draft.dest)
+        |> PlacedRoom.unlock(Grid.opposite(draft.entered_via))
+
+      {:ok, mansion} = Mansion.place(game.mansion, placed)
+
+      game = %{
+        game
+        | resources: resources,
+          mansion: mansion,
+          pool: DraftPool.remove(game.pool, template.id),
+          phase: :awaiting_command
+      }
+
+      game = log_entry(game, {:placed, template.id, draft.dest})
+      {:ok, enter_room(game, draft.dest)}
+    end
   end
+
+  def choose_draft(%__MODULE__{}, _indx), do: {:error, :no_draft_pending}
+
+  defp begin_draft(game, dest, direction) do
+    eligible? = fn room ->
+      Mansion.can_connect?(room, direction) and Room.allowed_at?(room, dest)
+    end
+
+    {candidates, rng} = DraftPool.draw(game.pool, game.rng, eligible?, game.config.draft_size)
+    candidates = if candidates == [], do: [game.config.fallback], else: candidates
+
+    draft = %Draft{dest: dest, entered_via: direction, candidates: candidates}
+
+    %{game | rng: rng, phase: {:drafting, draft}}
+    |> log_entry({:drafting, dest})
+  end
+
+  defp pick_candidate(candidates, index) do
+    if index in 1..length(candidates) do
+      {:ok, Enum.at(candidates, index - 1)}
+    else
+      {:error, :invalid_choice}
+    end
+  end
+
+  defp pay_gems(resources, 0), do: {:ok, resources}
+  defp pay_gems(resources, cost), do: Resources.spend(resources, :gems, cost)
 
   @doc """
   Buy a shop offer by id. Only works while standing in a `:shop` room.

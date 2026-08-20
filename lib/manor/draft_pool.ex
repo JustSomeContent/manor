@@ -35,10 +35,11 @@ defmodule Manor.DraftPool do
   here.
   """
   @spec draw(t(), RNG.t(), (Room.t() -> boolean()), pos_integer()) :: {[Room.t()], RNG.t()}
-  def draw(%__MODULE__{} = _pool, _rng, eligible?, count)
+  def draw(%__MODULE__{available: available}, rng, eligible?, count)
       when is_function(eligible?, 1) and is_integer(count) and count > 0 do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.DraftPool.draw/4")
+    available
+    |> Enum.filter(eligible?)
+    |> then(&RNG.take_weighted(rng, &1, fn room -> weight(room.rarity) end, count))
   end
 
   @doc """
@@ -48,8 +49,7 @@ defmodule Manor.DraftPool do
   `Enum.reject/2`.
   """
   @spec remove(t(), Room.id()) :: t()
-  def remove(%__MODULE__{} = _pool, _room_id) do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.DraftPool.remove/2")
+  def remove(%__MODULE__{available: available}, room_id) do
+    %__MODULE__{available: Enum.reject(available, &(&1.id == room_id))}
   end
 end

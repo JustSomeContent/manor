@@ -26,10 +26,7 @@ defmodule Manor.RNG do
   `{value, state}` tuple already.
   """
   @spec uniform(t(), pos_integer()) :: {pos_integer(), t()}
-  def uniform(_rng, n) when is_integer(n) and n > 0 do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.uniform/2")
-  end
+  def uniform(rng, n) when is_integer(n) and n > 0, do: :rand.uniform_s(n, rng)
 
   @doc """
   Pick one key from a map of `key => weight`, proportionally to weight.
@@ -40,9 +37,15 @@ defmodule Manor.RNG do
   `Enum.sort/1`-ed entries — sort so the walk order is deterministic).
   """
   @spec weighted(t(), %{key => pos_integer()}) :: {key, t()} when key: term()
-  def weighted(_rng, weights) when is_map(weights) and map_size(weights) > 0 do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.weighted/2")
+  def weighted(rng, weights) when is_map(weights) and map_size(weights) > 0 do
+    entries = Enum.sort(weights)
+    total = entries |> Enum.map(fn {_key, weight} -> weight end) |> Enum.sum()
+    {roll, rng} = uniform(rng, total)
+    {pick(entries, roll), rng}
+  end
+
+  defp pick([{key, weight} | rest], roll) do
+    if roll <= weight, do: key, else: pick(rest, roll - weight)
   end
 
   @doc """
@@ -60,9 +63,29 @@ defmodule Manor.RNG do
   @spec take_weighted(t(), [item], (item -> pos_integer()), non_neg_integer()) ::
           {[item], t()}
         when item: term()
-  def take_weighted(_rng, items, weight_fun, count)
+  def take_weighted(rng, items, weight_fun, count)
       when is_list(items) and is_function(weight_fun, 1) and is_integer(count) and count >= 0 do
-    # TODO(Part 4)
-    Manor.NotImplemented.todo!(part: 4, fun: "Manor.RNG.take_weighted/4")
+    do_take(rng, items, weight_fun, count, [])
+  end
+
+  defp do_take(rng, items, _weight_fun, count, taken) when items == [] or count == 0 do
+    {Enum.reverse(taken), rng}
+  end
+
+  defp do_take(rng, items, weight_fun, count, taken) do
+    total = items |> Enum.map(weight_fun) |> Enum.sum()
+    {roll, rng} = uniform(rng, total)
+    {picked, rest} = split_at_roll(items, weight_fun, roll, [])
+    do_take(rng, rest, weight_fun, count - 1, [picked | taken])
+  end
+
+  defp split_at_roll([item | rest], weight_fun, roll, skipped) do
+    weight = weight_fun.(item)
+
+    if roll <= weight do
+      {item, Enum.reverse(skipped, rest)}
+    else
+      split_at_roll(rest, weight_fun, roll - weight, [item | skipped])
+    end
   end
 end
