@@ -27,9 +27,8 @@ defmodule Manor.RunServer do
   this process owns state, never logic).
   """
   @spec start(RunConfig.t()) :: pid()
-  def start(%RunConfig{} = _config) do
-    # TODO(Part 7)
-    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.start/1")
+  def start(%RunConfig{} = config) do
+    spawn(fn -> loop(Game.new(config)) end)
   end
 
   @doc """
@@ -47,15 +46,47 @@ defmodule Manor.RunServer do
   """
   @spec turn(pid(), Game.command()) ::
           {:ok, Game.t()} | {:error, Game.error() | :timeout | :server_down}
-  def turn(server, _command) when is_pid(server) do
-    # TODO(Part 7)
-    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.turn/2")
-  end
+  def turn(server, command) when is_pid(server), do: request(server, {:turn, command})
 
   @doc "Synchronous snapshot of the server's current game state."
   @spec peek(pid()) :: {:ok, Game.t()} | {:error, :timeout | :server_down}
-  def peek(server) when is_pid(server) do
-    # TODO(Part 7)
-    Manor.NotImplemented.todo!(part: 7, fun: "Manor.RunServer.peek/1")
+  def peek(server) when is_pid(server), do: request(server, :peek)
+
+  defp request(server, request) do
+    ref = make_ref()
+    monitor = Process.monitor(server)
+    send(server, {request, self(), ref})
+
+    receive do
+      {^ref, reply} ->
+        Process.demonitor(monitor, [:flush])
+        reply
+
+      {:DOWN, ^monitor, :process, _pid, _reason} ->
+        {:error, :server_down}
+    after
+      @timeout ->
+        Process.demonitor(monitor, [:flush])
+        {:error, :timeout}
+    end
+  end
+
+  defp loop(game) do
+    receive do
+      {{:turn, command}, from, ref} ->
+        case Game.command(game, command) do
+          {:ok, new_game} ->
+            send(from, {ref, {:ok, new_game}})
+            loop(new_game)
+
+          {:error, _reason} = error ->
+            send(from, {ref, error})
+            loop(game)
+        end
+
+      {:peek, from, ref} ->
+        send(from, {ref, {:ok, game}})
+        loop(game)
+    end
   end
 end
