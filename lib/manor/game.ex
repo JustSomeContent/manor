@@ -476,8 +476,12 @@ defmodule Manor.Game do
           rooms_placed: non_neg_integer(),
           resources: Resources.t()
         }
-  def summary(%__MODULE__{} = _game) do
-    # TODO(Part 6)
-    Manor.NotImplemented.todo!(part: 6, fun: "Manor.Game.summary/1")
+  def summary(%__MODULE__{} = game) do
+    %{
+      outcome: status(game),
+      turns: game.turn,
+      rooms_placed: map_size(game.mansion.rooms) - 1,
+      resources: game.resources
+    }
   end
 end

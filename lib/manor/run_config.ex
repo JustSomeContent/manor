@@ -48,7 +48,22 @@ defmodule Manor.RunConfig do
   """
   @spec default(keyword()) :: t()
   def default(opts) when is_list(opts) do
-    # TODO(Part 6)
-    Manor.NotImplemented.todo!(part: 6, fun: "Manor.RunConfig.default/1")
+    opts = Keyword.validate!(opts, [:seed, steps: 40, keys: 1, gems: 2, coins: 0])
+    seed = Keyword.fetch!(opts, :seed)
+
+    %__MODULE__{
+      seed: seed,
+      starting_resources: %Resources{
+        steps: opts[:steps],
+        keys: opts[:keys],
+        gems: opts[:gems],
+        coins: opts[:coins]
+      },
+      rooms: Catalog.rooms(),
+      entrance: Catalog.entrance(),
+      fallback: Catalog.fallback(),
+      recipes: Catalog.recipes(),
+      shop_offers: Catalog.shop_offers()
+    }
   end
 end
