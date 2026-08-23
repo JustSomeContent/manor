@@ -26,3 +26,10 @@ Skeleton functions that `raise Manor.NotImplemented` are the user's exercises.
 - Only explicit-state `:rand` `_s` functions in the core; the RNG value threads through `game.rng`.
 - Unbuilt grid cells are absent map keys — no nils, no sentinels. Passages are derived by `Mansion.passage/3`, never stored.
 - Effects are data interpreted by `Manor.Effect`; behaviours only for computed logic (`Manor.Special`) and pluggable roles (`Manor.Strategy`); protocols only for printing.
+
+# Knowledge graph (graphify, local only)
+
+- This repo has a local graphify graph in `graphify-out/` (gitignored). For structure/architecture questions — "what calls X", "how do these modules relate", "trace the draft flow" — query it first (`graphify query "<question>"`) before sweeping files.
+- Refresh after a part lands: `/graphify . --update` post-commit (incremental; only changed files re-extract). Don't rebuild mid-part for every edit.
+- This repo is NOT indexed in the remote graphify workspace — the `mcp__graphify__*` tools serve other repos and will not know manor. Use the local graph here.
+- The graph is a map, not a TA loophole: it describes the learner's own code and never substitutes for the AI-pair protocol above.
