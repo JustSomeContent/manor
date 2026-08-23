@@ -35,8 +35,19 @@ defmodule Manor.Game do
   `combine/3`. Part 6: `summary/1`.
   """
 
-  alias Manor.PlacedRoom
-  alias Manor.{DraftPool, Grid, Mansion, Resources, RNG, Room, RunConfig}
+  alias Manor.{
+    DraftPool,
+    Effect,
+    Grid,
+    Mansion,
+    PlacedRoom,
+    Recipe,
+    Resources,
+    RNG,
+    Room,
+    RunConfig
+  }
+
   alias Manor.Game.Draft
 
   import Manor.Grid, only: [is_direction: 1]
@@ -167,8 +178,10 @@ defmodule Manor.Game do
         {:ok, unlock_ahead(%{game | resources: resources}, direction, :key)}
 
       {:error, {:insufficient, :keys}} ->
-        # Part 5 slots the lockpick fallback here
-        {:error, :locked_no_key}
+        case take_item(game, :lockpick) do
+          {:ok, game} -> {:ok, unlock_ahead(game, direction, :lockpick)}
+          {:error, _} -> {:error, :locked_no_key}
+        end
     end
   end
 
@@ -195,9 +208,28 @@ defmodule Manor.Game do
     {:ok, placed} = Mansion.fetch(game.mansion, dest)
 
     game
-    # part 5 inserts effect triggers before this
+    |> Effect.apply_trigger(placed, :on_enter)
+    |> apply_special(placed)
+    |> tick_per_turn()
     |> Map.update!(:turn, &(&1 + 1))
     |> check_win(placed)
+  end
+
+  defp apply_special(game, %PlacedRoom{room: %Room{special: nil}}), do: game
+  defp apply_special(game, %PlacedRoom{room: %Room{special: special}}), do: special.on_enter(game)
+
+  defp tick_per_turn(game) do
+    game.mansion.rooms
+    |> Map.values()
+    |> Enum.reduce(game, &Effect.apply_trigger(&2, &1, :per_turn))
+  end
+
+  defp take_item(game, item_id) do
+    case Map.get(game.inventory, item_id, 0) do
+      0 -> {:error, {:missing_item, item_id}}
+      1 -> {:ok, %{game | inventory: Map.delete(game.inventory, item_id)}}
+      n -> {:ok, %{game | inventory: Map.put(game.inventory, item_id, n - 1)}}
+    end
   end
 
   defp check_win(game, %PlacedRoom{room: %Room{category: :goal}}) do
@@ -268,7 +300,11 @@ defmodule Manor.Game do
           phase: :awaiting_command
       }
 
-      game = log_entry(game, {:placed, template.id, draft.dest})
+      game =
+        game
+        |> log_entry({:placed, template.id, draft.dest})
+        |> Effect.apply_trigger(placed, :on_place)
+
       {:ok, enter_room(game, draft.dest)}
     end
   end
@@ -311,9 +347,20 @@ defmodule Manor.Game do
   the effect vocabulary. Log `{:bought, offer_id}`.
   """
   @spec buy(t(), atom()) :: {:ok, t()} | {:error, error()}
-  def buy(%__MODULE__{} = _game, offer_id) when is_atom(offer_id) do
-    # TODO(Part 5)
-    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Game.buy/2")
+  def buy(%__MODULE__{phase: {:drafting, _}}, _offer_id), do: {:error, :draft_pending}
+  def buy(%__MODULE__{phase: {:ended, _}}, _offer_id), do: {:error, :game_over}
+
+  def buy(%__MODULE__{phase: :awaiting_command} = game, offer_id) when is_atom(offer_id) do
+    with :ok <- require_category(game, :shop, :not_in_shop),
+         {:ok, offer} <- find_offer(game.config.shop_offers, offer_id),
+         {:ok, resources} <- Resources.spend(game.resources, :coins, offer.price) do
+      game =
+        %{game | resources: resources}
+        |> log_entry({:bought, offer_id})
+        |> Effect.apply_action(offer.grants)
+
+      {:ok, game}
+    end
   end
 
   @doc """
@@ -331,9 +378,41 @@ defmodule Manor.Game do
   `Effect.apply_action/2`, log `{:crafted, output}`.
   """
   @spec combine(t(), Manor.Item.id(), Manor.Item.id()) :: {:ok, t()} | {:error, error()}
-  def combine(%__MODULE__{} = _game, a, b) when is_atom(a) and is_atom(b) do
-    # TODO(Part 5)
-    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Game.combine/3")
+  def combine(%__MODULE__{phase: {:drafting, _}}, _a, _b), do: {:error, :draft_pending}
+  def combine(%__MODULE__{phase: {:ended, _}}, _a, _b), do: {:error, :game_over}
+
+  def combine(%__MODULE__{phase: :awaiting_command} = game, a, b)
+      when is_atom(a) and is_atom(b) do
+    with :ok <- require_category(game, :workshop, :not_in_workshop),
+         {:ok, recipe} <- find_recipe(game.config.recipes, a, b),
+         {:ok, game} <- take_item(game, a),
+         {:ok, game} <- take_item(game, b) do
+      game =
+        game
+        |> Effect.apply_action({:grant_item, recipe.output})
+        |> log_entry({:crafted, recipe.output})
+
+      {:ok, game}
+    end
+  end
+
+  defp find_recipe(recipes, a, b) do
+    case Recipe.find(recipes, a, b) do
+      {:ok, _} = found -> found
+      :error -> {:error, :unknown_recipe}
+    end
+  end
+
+  defp require_category(game, category, error) do
+    {:ok, placed} = Mansion.fetch(game.mansion, game.player)
+    if placed.room.category == category, do: :ok, else: {:error, error}
+  end
+
+  defp find_offer(shop_offers, offer_id) do
+    case Enum.find(shop_offers, &(&1.id == offer_id)) do
+      nil -> {:error, :unknown_offer}
+      offer -> {:ok, offer}
+    end
   end
 
   @typedoc "A parsed player command, as produced by `Manor.CLI.Parser` and `Manor.Strategy` bots."

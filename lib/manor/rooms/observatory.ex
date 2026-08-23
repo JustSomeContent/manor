@@ -8,6 +8,8 @@ defmodule Manor.Rooms.Observatory do
   the `Manor.Special` behaviour instead.
   """
 
+  alias Manor.{Effect, Mansion}
+
   @behaviour Manor.Special
 
   @doc """
@@ -19,8 +21,18 @@ defmodule Manor.Rooms.Observatory do
   Granting zero is not a thing: skip the action entirely when no gardens exist.
   """
   @impl Manor.Special
-  def on_enter(_game) do
-    # TODO(Part 5)
-    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Rooms.Observatory.on_enter/1")
+  def on_enter(game) do
+    {:ok, placed} = Mansion.fetch(game.mansion, game.player)
+
+    greens =
+      game.mansion.rooms
+      |> Map.values()
+      |> Enum.count(&(&1.room.category == :green))
+
+    if placed.entered_count == 1 and greens > 0 do
+      Effect.apply_action(game, {:grant, :gems, greens})
+    else
+      game
+    end
   end
 end

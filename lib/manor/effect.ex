@@ -18,6 +18,7 @@ defmodule Manor.Effect do
   behaviour for the bespoke few.
   """
 
+  require Manor.Resources
   alias Manor.{PlacedRoom, Resources}
 
   @type trigger :: :on_place | :on_enter | :per_turn
@@ -35,10 +36,10 @@ defmodule Manor.Effect do
   (`for {^trigger, action} <- ...`) filters and destructures in one move.
   """
   @spec apply_trigger(Manor.Game.t(), PlacedRoom.t(), trigger()) :: Manor.Game.t()
-  def apply_trigger(_game, %PlacedRoom{} = _placed, trigger)
+  def apply_trigger(game, %PlacedRoom{room: room}, trigger)
       when trigger in [:on_place, :on_enter, :per_turn] do
-    # TODO(Part 5)
-    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Effect.apply_trigger/3")
+    actions = for {^trigger, action} <- room.effects, do: action
+    Enum.reduce(actions, game, &apply_action(&2, &1))
   end
 
   @doc """
@@ -57,8 +58,17 @@ defmodule Manor.Effect do
   need `require Manor.Resources` up top.
   """
   @spec apply_action(Manor.Game.t(), action()) :: Manor.Game.t()
-  def apply_action(_game, _action) do
-    # TODO(Part 5)
-    Manor.NotImplemented.todo!(part: 5, fun: "Manor.Effect.apply_action/2")
+  def apply_action(game, {:grant, kind, amount}) when Resources.is_kind(kind) do
+    game
+    |> Map.update!(:resources, &Resources.grant(&1, kind, amount))
+    |> log({:granted, kind, amount})
   end
+
+  def apply_action(game, {:grant_item, item_id}) when is_atom(item_id) do
+    game
+    |> Map.update!(:inventory, &Map.update(&1, item_id, 1, fn n -> n + 1 end))
+    |> log({:received, item_id})
+  end
+
+  defp log(game, entry), do: Map.update!(game, :log, &[entry | &1])
 end
