@@ -62,6 +62,11 @@ defmodule Manor.Game.Server do
     GenServer.call(via(name), {:combine, a, b})
   end
 
+  @spec rest(String.t()) :: {:ok, Game.t()} | {:error, Game.error()}
+  def rest(name) when is_binary(name) do
+    GenServer.call(via(name), :rest)
+  end
+
   @spec view(String.t()) :: Game.t()
   def view(name) when is_binary(name) do
     GenServer.call(via(name), :view)

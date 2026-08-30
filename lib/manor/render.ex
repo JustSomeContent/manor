@@ -127,7 +127,7 @@ defmodule Manor.Render do
   defp message_line(%Game{log: [latest | _]}), do: ["> ", describe(latest)]
 
   defp prompt(%Game{phase: :awaiting_command}) do
-    "move n/s/e/w · buy <id> · combine <a> <b> · look · help · quit"
+    "move n/s/e/w · buy <id> · combine <a> <b> · rest · look · help · quit"
   end
 
   defp prompt(%Game{phase: {:drafting, draft}}), do: draft_prompt(draft)
@@ -138,6 +138,10 @@ defmodule Manor.Render do
 
   defp prompt(%Game{phase: {:ended, :out_of_steps}}) do
     "The day is spent. Start a fresh run to try again."
+  end
+
+  defp prompt(%Game{phase: {:ended, :retired}} = game) do
+    ["Retired after ", Integer.to_string(game.turn), " turns. Start a fresh run to try again."]
   end
 
   defp draft_prompt(draft) do
@@ -205,6 +209,7 @@ defmodule Manor.Render do
   def describe({:unlocked, :lockpick}), do: "The lockpick snaps, but the door is open."
   def describe({:won, _coord}), do: "The Antechamber. You made it."
   def describe({:day_over, :out_of_steps}), do: "Your legs give out. The day is over."
+  def describe({:day_over, :retired}), do: "You call it a day. The manor will keep."
 
   defp humanize(atom), do: atom |> Atom.to_string() |> String.replace("_", " ")
 end

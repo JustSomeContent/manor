@@ -66,7 +66,8 @@ defmodule Manor.Game do
     log: []
   ]
 
-  @type phase :: :awaiting_command | {:drafting, Draft.t()} | {:ended, :won | :out_of_steps}
+  @type phase ::
+          :awaiting_command | {:drafting, Draft.t()} | {:ended, :won | :out_of_steps | :retired}
 
   @type t :: %__MODULE__{
           config: RunConfig.t(),
@@ -415,12 +416,29 @@ defmodule Manor.Game do
     end
   end
 
+  @doc """
+  Call it a day: end the run voluntarily, with resources still in hand.
+
+  A mansion can dead-end — every frontier walled off, no key for the one
+  locked door — leaving a player who can never win *or* run out of steps
+  on a viable move. Resting is their legal exit: an `{:ok, game}`
+  transition to `{:ended, :retired}`, never an error. Allowed mid-draft
+  too; the unresolved draft simply dies with the day.
+  """
+  @spec rest(t()) :: {:ok, t()} | {:error, :game_over}
+  def rest(%__MODULE__{phase: {:ended, _}}), do: {:error, :game_over}
+
+  def rest(%__MODULE__{} = game) do
+    {:ok, %{game | phase: {:ended, :retired}} |> log_entry({:day_over, :retired})}
+  end
+
   @typedoc "A parsed player command, as produced by `Manor.CLI.Parser` and `Manor.Strategy` bots."
   @type command ::
           {:move, Grid.direction()}
           | {:choose, pos_integer()}
           | {:buy, atom()}
           | {:combine, Manor.Item.id(), Manor.Item.id()}
+          | :rest
 
   @doc """
   Apply a parsed command — one entry point for scripted drivers.
@@ -436,6 +454,7 @@ defmodule Manor.Game do
   def command(%__MODULE__{} = game, {:choose, index}), do: choose_draft(game, index)
   def command(%__MODULE__{} = game, {:buy, offer_id}), do: buy(game, offer_id)
   def command(%__MODULE__{} = game, {:combine, id_1, id_2}), do: combine(game, id_1, id_2)
+  def command(%__MODULE__{} = game, :rest), do: rest(game)
 
   @doc """
   Whether the day is over (won or out of steps).

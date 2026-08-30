@@ -46,6 +46,7 @@ defmodule Manor.CLI.Parser do
   defp do_parse("east"), do: {:ok, {:move, :east}}
   defp do_parse("w"), do: {:ok, {:move, :west}}
   defp do_parse("west"), do: {:ok, {:move, :west}}
+  defp do_parse("rest"), do: {:ok, :rest}
   defp do_parse("look"), do: {:ok, :look}
   defp do_parse("help"), do: {:ok, :help}
   defp do_parse("quit"), do: {:ok, :quit}
