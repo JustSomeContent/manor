@@ -44,6 +44,14 @@ Development now runs benchmark-first:
   Random 0% wins, 53 rejections/day. Greedy 32% wins, 8.9 turns/win, 24.9
   revisits (pacing death). Surveyor 94% wins, 17.0 turns/win, 2.3 revisits,
   3.96 closets/day — that closet rate is pool exhaustion, a mechanics signal.
+- After the 2026-08-30 mechanics round (second wing of 9 rooms, `{:drain, ..}` +
+  `:on_exit` effects, spyglass = +1 candidate, shop sinks; 200 seeds): Greedy 74%
+  (30 days budget-exhausted — its `|| 0` draft fallback loops on an unaffordable
+  candidate; left as-is, it is the handbook's reference bot). Surveyor 99.5%,
+  9.0 turns/win, 0 closets, 0 rejections. The difficulty lever is gems, not
+  steps: Surveyor still wins 95% at 10 starting steps, 92% at 1 gem, 33% at 0.
+  Every retired day was a genuinely closed mansion once the bot learned to keep
+  the Antechamber's 2 gems in reserve.
 - `mix credo --strict` and the Annex B property tests are part of the gates now,
   alongside warnings-as-errors and format. `.credo.exs` documents one deliberate
   overrule (passage/3's nesting); argue in that file, not by deleting findings.

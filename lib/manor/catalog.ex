@@ -180,6 +180,92 @@ defmodule Manor.Catalog do
         gem_cost: 2,
         effects: [{:on_place, {:grant, :gems, 4}}]
       },
+      # ── The second wing: drafted in after the benchmark showed the pool
+      # running dry (Surveyor: ~4 closets a day). More north doors, two
+      # curses, and a use for every item.
+      %Room{
+        id: :stairwell,
+        name: "Stairwell",
+        code: "ST",
+        category: :hallway,
+        rarity: :commonplace,
+        doors: %{north: :open, south: :open, east: :open}
+      },
+      %Room{
+        id: :colonnade,
+        name: "Colonnade",
+        code: "CN",
+        category: :hallway,
+        rarity: :standard,
+        doors: %{north: :open, east: :open, west: :open}
+      },
+      %Room{
+        id: :drafty_hall,
+        name: "Drafty Hall",
+        code: "DH",
+        category: :hallway,
+        rarity: :commonplace,
+        doors: %{north: :open, east: :open, south: :open, west: :open},
+        effects: [{:on_exit, {:drain, :steps, 1}}]
+      },
+      %Room{
+        id: :boudoir,
+        name: "Boudoir",
+        code: "BD",
+        category: :bedroom,
+        rarity: :standard,
+        doors: %{north: :open, west: :open},
+        effects: [{:on_place, {:grant, :steps, 3}}]
+      },
+      %Room{
+        id: :library,
+        name: "Library",
+        code: "LI",
+        category: :study,
+        rarity: :unusual,
+        doors: %{south: :open, east: :open, west: :open},
+        gem_cost: 1,
+        effects: [{:on_place, {:grant, :gems, 2}}]
+      },
+      %Room{
+        id: :conservatory,
+        name: "Conservatory",
+        code: "CV",
+        category: :green,
+        rarity: :unusual,
+        doors: %{north: :open, south: :open},
+        gem_cost: 1,
+        effects: [{:on_enter, {:grant, :gems, 1}}]
+      },
+      %Room{
+        id: :root_cellar,
+        name: "Root Cellar",
+        code: "RC",
+        category: :dead_end,
+        rarity: :unusual,
+        doors: %{south: :open, east: :open},
+        effects: [{:on_place, {:grant_item, :shovel}}]
+      },
+      %Room{
+        id: :panic_room,
+        name: "Panic Room",
+        code: "PR",
+        category: :dead_end,
+        rarity: :unusual,
+        doors: %{west: :open},
+        gem_cost: 1,
+        effects: [{:on_place, {:grant, :keys, 1}}]
+      },
+      %Room{
+        id: :chapel,
+        name: "Chapel",
+        code: "CH",
+        category: :chapel,
+        rarity: :rare,
+        doors: %{north: :open, south: :open},
+        gem_cost: 1,
+        effects: [{:on_place, {:grant, :gems, 3}}, {:per_turn, {:drain, :coins, 1}}]
+      },
       %Room{
         id: :antechamber,
         name: "Antechamber",
@@ -215,7 +301,7 @@ defmodule Manor.Catalog do
       spyglass: %Item{
         id: :spyglass,
         name: "Spyglass",
-        description: "A collector's piece. It has seen the ninth rank; you have not."
+        description: "Shows one more candidate in every draft while carried."
       }
     }
   end
@@ -236,7 +322,16 @@ defmodule Manor.Catalog do
       %{id: :trail_mix, label: "Trail Mix (+4 steps)", price: 2, grants: {:grant, :steps, 4}},
       %{id: :spare_key, label: "Spare Key", price: 3, grants: {:grant, :keys, 1}},
       %{id: :shovel, label: "Shovel", price: 2, grants: {:grant_item, :shovel}},
-      %{id: :cog, label: "Brass Cog", price: 1, grants: {:grant_item, :cog}}
+      %{id: :cog, label: "Brass Cog", price: 1, grants: {:grant_item, :cog}},
+      # Sinks for the coins that used to pile up unspent.
+      %{id: :feast, label: "Feast (+10 steps)", price: 6, grants: {:grant, :steps, 10}},
+      %{id: :gem_pouch, label: "Gem Pouch (+3 gems)", price: 7, grants: {:grant, :gems, 3}},
+      %{
+        id: :spyglass,
+        label: "Spyglass (+1 draft candidate)",
+        price: 8,
+        grants: {:grant_item, :spyglass}
+      }
     ]
   end
 end

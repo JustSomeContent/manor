@@ -7,7 +7,8 @@ defmodule Manor.Effect do
       effects: [
         {:on_place, {:grant, :steps, 2}},   # Bedroom: +2 steps when drafted
         {:on_enter, {:grant, :gems, 1}},    # Garden: +1 gem each entry
-        {:per_turn, {:grant, :coins, 1}}    # Terrace: +1 coin every turn while placed
+        {:per_turn, {:grant, :coins, 1}},   # Terrace: +1 coin every turn while placed
+        {:on_exit, {:drain, :steps, 1}}     # Drafty Hall: leaving costs an extra step
       ]
 
   This is a tiny DSL and this module is its evaluator: adding an effect
@@ -21,9 +22,10 @@ defmodule Manor.Effect do
   require Manor.Resources
   alias Manor.{PlacedRoom, Resources}
 
-  @type trigger :: :on_place | :on_enter | :per_turn
+  @type trigger :: :on_place | :on_enter | :on_exit | :per_turn
   @type action ::
           {:grant, Resources.kind(), pos_integer()}
+          | {:drain, Resources.kind(), pos_integer()}
           | {:grant_item, Manor.Item.id()}
   @type t :: {trigger(), action()}
 
@@ -37,7 +39,7 @@ defmodule Manor.Effect do
   """
   @spec apply_trigger(Manor.Game.t(), PlacedRoom.t(), trigger()) :: Manor.Game.t()
   def apply_trigger(game, %PlacedRoom{room: room}, trigger)
-      when trigger in [:on_place, :on_enter, :per_turn] do
+      when trigger in [:on_place, :on_enter, :on_exit, :per_turn] do
     actions = for {^trigger, action} <- room.effects, do: action
     Enum.reduce(actions, game, &apply_action(&2, &1))
   end
@@ -62,6 +64,12 @@ defmodule Manor.Effect do
     game
     |> Map.update!(:resources, &Resources.grant(&1, kind, amount))
     |> log({:granted, kind, amount})
+  end
+
+  def apply_action(game, {:drain, kind, amount}) when Resources.is_kind(kind) do
+    game
+    |> Map.update!(:resources, &Resources.drain(&1, kind, amount))
+    |> log({:drained, kind, amount})
   end
 
   def apply_action(game, {:grant_item, item_id}) when is_atom(item_id) do

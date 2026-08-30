@@ -203,6 +203,7 @@ defmodule Manor.Game do
   end
 
   defp enter_room(game, dest) do
+    game = apply_exit_trigger(game)
     mansion = Mansion.update!(game.mansion, dest, &PlacedRoom.record_entry/1)
     game = %{game | mansion: mansion, player: dest} |> log_entry({:moved, dest})
 
@@ -214,6 +215,12 @@ defmodule Manor.Game do
     |> tick_per_turn()
     |> Map.update!(:turn, &(&1 + 1))
     |> check_win(placed)
+  end
+
+  # The room being left gets its say before the player moves.
+  defp apply_exit_trigger(game) do
+    {:ok, departed} = Mansion.fetch(game.mansion, game.player)
+    Effect.apply_trigger(game, departed, :on_exit)
   end
 
   defp apply_special(game, %PlacedRoom{room: %Room{special: nil}}), do: game
@@ -317,13 +324,19 @@ defmodule Manor.Game do
       Mansion.can_connect?(room, direction) and Room.allowed_at?(room, dest)
     end
 
-    {candidates, rng} = DraftPool.draw(game.pool, game.rng, eligible?, game.config.draft_size)
+    draft_size = game.config.draft_size + spyglass_bonus(game)
+    {candidates, rng} = DraftPool.draw(game.pool, game.rng, eligible?, draft_size)
     candidates = if candidates == [], do: [game.config.fallback], else: candidates
 
     draft = %Draft{dest: dest, entered_via: direction, candidates: candidates}
 
     %{game | rng: rng, phase: {:drafting, draft}}
     |> log_entry({:drafting, dest})
+  end
+
+  # A carried spyglass shows one more candidate per draft.
+  defp spyglass_bonus(%__MODULE__{inventory: inventory}) do
+    if Map.get(inventory, :spyglass, 0) > 0, do: 1, else: 0
   end
 
   defp pick_candidate(candidates, index) do

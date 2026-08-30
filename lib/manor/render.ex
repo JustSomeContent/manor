@@ -202,6 +202,7 @@ defmodule Manor.Render do
   def describe({:drafting, coord}), do: ["An unbuilt room at ", inspect(coord), " — draft!"]
   def describe({:placed, id, _coord}), do: ["Built the ", humanize(id), "."]
   def describe({:granted, kind, n}), do: ["+", Integer.to_string(n), " ", Atom.to_string(kind)]
+  def describe({:drained, kind, n}), do: ["-", Integer.to_string(n), " ", Atom.to_string(kind)]
   def describe({:received, item}), do: ["Received: ", humanize(item), "."]
   def describe({:bought, offer}), do: ["Bought ", humanize(offer), "."]
   def describe({:crafted, item}), do: ["Crafted: ", humanize(item), "!"]

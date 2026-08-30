@@ -36,7 +36,16 @@ defmodule Manor.Room do
   @type id :: atom()
   @type rarity :: :commonplace | :standard | :unusual | :rare
   @type category ::
-          :entrance | :hallway | :bedroom | :green | :shop | :workshop | :dead_end | :goal
+          :entrance
+          | :hallway
+          | :bedroom
+          | :green
+          | :shop
+          | :workshop
+          | :dead_end
+          | :study
+          | :chapel
+          | :goal
   @type door :: :open | :locked
 
   @type t :: %__MODULE__{

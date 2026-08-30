@@ -56,6 +56,19 @@ defmodule Manor.Resources do
   end
 
   @doc """
+  Drain `amount` of a resource, flooring at zero — the cursed-room effect.
+
+  Unlike `spend/3`, draining never refuses: a curse takes what you have.
+  The clamp is the whole rule; Annex B's property suite polices it
+  ("resources never go negative") across every generated day.
+  """
+  @spec drain(t(), kind(), pos_integer()) :: t()
+  def drain(%__MODULE__{} = resources, kind, amount)
+      when is_kind(kind) and is_integer(amount) and amount > 0 do
+    Map.update!(resources, kind, &max(&1 - amount, 0))
+  end
+
+  @doc """
   Current count of a resource.
 
   ## Part 1 hints

@@ -35,12 +35,17 @@ defmodule Manor.Strategy.Surveyor do
   @impl Manor.Strategy
   def next_command(%Game{phase: {:drafting, draft}} = game) do
     gems = Resources.get(game.resources, :gems)
+    reserve = goal_cost(game)
+    candidates = Enum.with_index(draft.candidates, 1)
 
+    # Benchmarks showed every lost day ending at rank 8 one gem short of
+    # the Antechamber: prefer picks that keep the goal affordable, fall
+    # back to anything affordable, and rest only when nothing is.
     best =
-      draft.candidates
-      |> Enum.with_index(1)
-      |> Enum.filter(fn {room, _index} -> room.gem_cost <= gems end)
-      |> Enum.max_by(fn {room, _index} -> draft_score(room, draft) end, fn -> nil end)
+      pick_best(candidates, draft, fn room ->
+        room.gem_cost <= gems and (keeps_reserve?(room, gems, reserve) or goal?(room))
+      end) ||
+        pick_best(candidates, draft, &(&1.gem_cost <= gems))
 
     case best do
       {_room, index} -> {:choose, index}
@@ -60,6 +65,28 @@ defmodule Manor.Strategy.Surveyor do
 
   ## Drafting — score the room's future, not just its north door
 
+  defp pick_best(candidates, draft, eligible?) do
+    candidates
+    |> Enum.filter(fn {room, _index} -> eligible?.(room) end)
+    |> Enum.max_by(fn {room, _index} -> draft_score(room, draft) end, fn -> nil end)
+  end
+
+  defp goal?(room), do: room.category == :goal
+
+  defp goal_cost(game) do
+    case Enum.find(game.config.rooms, &goal?/1) do
+      nil -> 0
+      goal -> goal.gem_cost
+    end
+  end
+
+  # Affordable now, and still able to pay for the goal afterwards —
+  # counting any gems the room itself hands over when placed.
+  defp keeps_reserve?(room, gems, reserve) do
+    placed_gems = for {:on_place, {:grant, :gems, n}} <- room.effects, do: n
+    room.gem_cost <= gems and gems - room.gem_cost + Enum.sum(placed_gems) >= reserve
+  end
+
   defp draft_score(room, %{dest: {_col, rank}, entered_via: entered_via}) do
     doors = Map.keys(room.doors)
     onward = doors -- [Grid.opposite(entered_via)]
@@ -67,8 +94,16 @@ defmodule Manor.Strategy.Surveyor do
     north_bonus = if :north in doors and rank < Grid.goal_rank(), do: 100, else: 0
     dead_end_penalty = if onward == [], do: -50, else: 0
 
-    north_bonus + 10 * length(onward) + dead_end_penalty - room.gem_cost
+    north_bonus + 10 * length(onward) + dead_end_penalty - room.gem_cost +
+      Enum.sum(Enum.map(room.effects, &effect_value/1))
   end
+
+  # Curses cost, grants pay — a recurring drain is the worst of the lot.
+  defp effect_value({:per_turn, {:drain, _kind, n}}), do: -8 * n
+  defp effect_value({_trigger, {:drain, _kind, n}}), do: -4 * n
+  defp effect_value({:per_turn, {:grant, _kind, n}}), do: 6 * n
+  defp effect_value({_trigger, {:grant, _kind, n}}), do: 3 * n
+  defp effect_value({_trigger, {:grant_item, _item}}), do: 5
 
   ## Economy — wants are read off the offers' grants, not their ids
 
@@ -79,6 +114,7 @@ defmodule Manor.Strategy.Surveyor do
       wanted? = fn
         {:grant, :keys, _n} -> Resources.get(game.resources, :keys) == 0
         {:grant, :steps, _n} -> Resources.get(game.resources, :steps) <= 10
+        {:grant_item, :spyglass} -> Map.get(game.inventory, :spyglass, 0) == 0
         _grant -> false
       end
 
