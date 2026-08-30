@@ -27,6 +27,27 @@ Skeleton functions that `raise Manor.NotImplemented` are the user's exercises.
 - Unbuilt grid cells are absent map keys — no nils, no sentinels. Passages are derived by `Mansion.passage/3`, never stored.
 - Effects are data interpreted by `Manor.Effect`; behaviours only for computed logic (`Manor.Special`) and pluggable roles (`Manor.Strategy`); protocols only for printing.
 
+# Post-lab: the bot lab (benchmark-first development)
+
+The core lab (parts 0–9) is complete and the AI-pair protocol's exercise
+restrictions no longer bind new work; the architecture ground rules above still do.
+Development now runs benchmark-first:
+
+- `mix manor.bench --strategy <name> --runs N` simulates N seeded days headless
+  (`Manor.Benchmark`). Seeds are always 1..N, so two invocations with the same
+  arguments compare apples to apples.
+- The loop: change a strategy or mechanic → benchmark → compare aggregates
+  (win rate, rejections, revisits, closets drafted, resources left over) against
+  the previous numbers → keep or revert. Quote the aggregate line that justified
+  a change in its commit message — the repo's numbers are its memory.
+- Baselines (2026-08-30, 50 seeds, real catalog, 400-command budget):
+  Random 0% wins, 53 rejections/day. Greedy 32% wins, 8.9 turns/win, 24.9
+  revisits (pacing death). Surveyor 94% wins, 17.0 turns/win, 2.3 revisits,
+  3.96 closets/day — that closet rate is pool exhaustion, a mechanics signal.
+- `mix credo --strict` and the Annex B property tests are part of the gates now,
+  alongside warnings-as-errors and format. `.credo.exs` documents one deliberate
+  overrule (passage/3's nesting); argue in that file, not by deleting findings.
+
 # Knowledge graph (graphify, local only)
 
 - This repo has a local graphify graph in `graphify-out/` (gitignored). For structure/architecture questions — "what calls X", "how do these modules relate", "trace the draft flow" — query it first (`graphify query "<question>"`) before sweeping files.

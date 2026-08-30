@@ -24,6 +24,7 @@ defmodule Manor.Application do
   @impl Application
   def start(_type, _args) do
     children = [
+      Manor.Stats,
       {Registry, keys: :unique, name: Manor.RunRegistry},
       {DynamicSupervisor, name: Manor.RunSupervisor, strategy: :one_for_one}
     ]

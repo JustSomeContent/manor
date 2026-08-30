@@ -11,8 +11,8 @@ defmodule Manor.CLI do
   parsing kills this loop, not the run — `attach/1` reconnects.
   """
 
-  alias Manor.{Game, Mansion, Render}
   alias Manor.CLI.Parser
+  alias Manor.{Game, Mansion, Render}
   alias Manor.Game.Server
 
   @doc """
@@ -58,45 +58,58 @@ defmodule Manor.CLI do
     IO.puts(Render.render(game))
 
     if Game.over?(game) do
-      :ok
+      record_stats(game)
     else
       prompt_loop(name, game)
     end
   end
 
+  # The stats vault records by explicit call at day's end (Annex A) —
+  # skipped quietly when the vault isn't running (bare test trees).
+  defp record_stats(game) do
+    if Process.whereis(Manor.Stats), do: Manor.Stats.record(game)
+    :ok
+  end
+
   defp prompt_loop(name, game) do
-    # IO.gets returns :eof / {:error, _} (not nil, whatever the hint said);
-    # anything non-binary means the terminal is gone — treat it as quit.
-    input =
-      case IO.gets("> ") do
-        line when is_binary(line) -> line
-        _eof_or_error -> "quit"
-      end
-
-    case Parser.parse(input) do
-      {:ok, :quit} ->
-        :ok
-
-      {:ok, :look} ->
-        IO.puts(room_details(game))
-        prompt_loop(name, game)
-
-      {:ok, :help} ->
-        IO.puts(help())
-        prompt_loop(name, game)
-
-      {:ok, command} ->
-        case dispatch(name, command) do
-          {:ok, new_game} ->
-            loop(name, new_game)
-
-          {:error, reason} ->
-            IO.puts(["(rejected: ", inspect(reason), ")"])
-            prompt_loop(name, game)
-        end
+    case Parser.parse(read_line()) do
+      {:ok, parsed} ->
+        handle_input(parsed, name, game)
 
       {:error, :unknown_command} ->
         IO.puts("(unknown command — try help)")
+        prompt_loop(name, game)
+    end
+  end
+
+  # IO.gets returns :eof / {:error, _} (not nil, whatever the hint said);
+  # anything non-binary means the terminal is gone — treat it as quit.
+  defp read_line do
+    case IO.gets("> ") do
+      line when is_binary(line) -> line
+      _eof_or_error -> "quit"
+    end
+  end
+
+  defp handle_input(:quit, _name, _game), do: :ok
+
+  defp handle_input(:look, name, game) do
+    IO.puts(room_details(game))
+    prompt_loop(name, game)
+  end
+
+  defp handle_input(:help, name, game) do
+    IO.puts(help())
+    prompt_loop(name, game)
+  end
+
+  defp handle_input(command, name, game) do
+    case dispatch(name, command) do
+      {:ok, new_game} ->
+        loop(name, new_game)
+
+      {:error, reason} ->
+        IO.puts(["(rejected: ", inspect(reason), ")"])
         prompt_loop(name, game)
     end
   end
@@ -161,11 +174,13 @@ defmodule Manor.CLI do
       look            — this room's details: shop stock, recipes, your items
       buy <id>        — in a shop ("look" shows the ids and prices)
       combine <a> <b> — in the workshop
+      rest            — call it a day: ends the run for good (stuck? this is the exit)
       quit            — leave; the day keeps running, Manor.CLI.attach/1 returns
     """
     |> String.trim_trailing()
   end
 
+  defp dispatch(name, :rest), do: Server.rest(name)
   defp dispatch(name, {:move, direction}), do: Server.move(name, direction)
   defp dispatch(name, {:choose, index}), do: Server.choose(name, index)
   defp dispatch(name, {:buy, offer_id}), do: Server.buy(name, offer_id)

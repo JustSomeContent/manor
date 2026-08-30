@@ -8,7 +8,11 @@ defmodule Manor.MixProject do
       elixir: "~> 1.20",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      name: "Manor",
+      docs: [main: "Manor", extras: ["README.md"], groups_for_modules: doc_groups()],
+      # The project ships mix tasks, so Mix itself belongs in the PLT.
+      dialyzer: [plt_add_apps: [:mix]]
     ]
   end
 
@@ -29,9 +33,27 @@ defmodule Manor.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  # Zero dependencies, on purpose: the whole lab is stdlib + OTP.
-  # The Annex parts add stream_data / ex_doc / dialyxir / credo when you get there.
+  # The core lab ran on zero dependencies, on purpose. These arrived with
+  # the Annex parts — tooling only, nothing at runtime:
   defp deps do
-    []
+    [
+      # Annex B: property-based testing
+      {:stream_data, "~> 1.1", only: [:dev, :test]},
+      # Annex C: documentation site (mix docs)
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      # Annex D: static analysis (mix dialyzer, mix credo --strict)
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp doc_groups do
+    [
+      "Pure core":
+        ~r/Manor\.(Game|Grid|Mansion|PlacedRoom|Room|Resources|RNG|DraftPool|Effect|Recipe|Special|Item)/,
+      Content: ~r/Manor\.(Catalog|RunConfig)/,
+      "OTP shell": ~r/Manor\.(Application|RunServer|Stats|Game\.Server)/,
+      "Edge & bots": ~r/Manor\.(CLI|Render|Strategy|Autoplay|Benchmark)/
+    ]
   end
 end
