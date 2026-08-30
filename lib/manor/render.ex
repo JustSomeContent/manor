@@ -29,17 +29,14 @@ defmodule Manor.Render do
   day-over line).
   """
 
-  alias Manor.{Game, Grid}
+  alias Manor.{Game, Grid, Mansion, PlacedRoom}
 
   # We define our own to_string/1, so Kernel's auto-import must step aside.
   import Kernel, except: [to_string: 1]
 
   @doc "The full frame as a binary: `IO.iodata_to_binary/1`, called exactly once."
   @spec to_string(Game.t()) :: String.t()
-  def to_string(%Game{} = _game) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.to_string/1")
-  end
+  def to_string(%Game{} = game), do: IO.iodata_to_binary(render(game))
 
   @doc """
   The full frame as iodata: grid, status bar, last event, prompt.
@@ -49,9 +46,8 @@ defmodule Manor.Render do
   returning iodata; concatenate by *listing*, never by `<>`.
   """
   @spec render(Game.t()) :: iodata()
-  def render(%Game{} = _game) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.render/1")
+  def render(%Game{} = game) do
+    [grid(game), "\n", status_bar(game), "\n", message_line(game), "\n", prompt(game)]
   end
 
   @doc """
@@ -64,9 +60,15 @@ defmodule Manor.Render do
   binary, and one join here will fail the iodata test.
   """
   @spec grid(Game.t()) :: iodata()
-  def grid(%Game{} = _game) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.grid/1")
+  def grid(%Game{} = game) do
+    for rank <- 9..1//-1 do
+      cells = for col <- 1..5, do: cell(game, {col, rank})
+
+      for row_index <- 0..2 do
+        line = cells |> Enum.map(&Enum.at(&1, row_index)) |> Enum.intersperse(" ")
+        [line, "\n"]
+      end
+    end
   end
 
   @doc """
@@ -80,9 +82,31 @@ defmodule Manor.Render do
   `:locked` → `"▒"`.
   """
   @spec cell(Game.t(), Grid.coord()) :: [iodata()]
-  def cell(%Game{} = _game, _coord) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.cell/2")
+  def cell(%Game{} = game, coord) do
+    case Mansion.fetch(game.mansion, coord) do
+      :error -> ["· · ·", "· · ·", "· · ·"]
+      {:ok, placed} -> room_cell(placed, game.player == coord)
+    end
+  end
+
+  defp room_cell(%PlacedRoom{} = placed, player_here?) do
+    marker = if player_here?, do: "@", else: " "
+
+    [
+      ["┌─", edge(placed, :north), "─┐"],
+      [edge(placed, :west), placed.room.code, marker, edge(placed, :east)],
+      ["└─", edge(placed, :south), "─┘"]
+    ]
+  end
+
+  defp edge(placed, direction) do
+    horizontal? = direction in [:north, :south]
+
+    case PlacedRoom.door(placed, direction) do
+      nil -> if horizontal?, do: "─", else: "│"
+      :open -> " "
+      :locked -> "▒"
+    end
   end
 
   @doc """
@@ -95,10 +119,63 @@ defmodule Manor.Render do
   (qualified, since this module shadows `to_string/1`).
   """
   @spec status_bar(Game.t()) :: iodata()
-  def status_bar(%Game{} = _game) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.status_bar/1")
+  def status_bar(%Game{} = game) do
+    [Kernel.to_string(game.resources), "   Turn ", Integer.to_string(game.turn)]
   end
+
+  defp message_line(%Game{log: []}), do: "> A new day at the manor."
+  defp message_line(%Game{log: [latest | _]}), do: ["> ", describe(latest)]
+
+  defp prompt(%Game{phase: :awaiting_command}) do
+    "move n/s/e/w · buy <id> · combine <a> <b> · look · help · quit"
+  end
+
+  defp prompt(%Game{phase: {:drafting, draft}}), do: draft_prompt(draft)
+
+  defp prompt(%Game{phase: {:ended, :won}} = game) do
+    ["A winning day, in ", Integer.to_string(game.turn), " turns."]
+  end
+
+  defp prompt(%Game{phase: {:ended, :out_of_steps}}) do
+    "The day is spent. Start a fresh run to try again."
+  end
+
+  defp draft_prompt(draft) do
+    draft.candidates
+    |> Enum.with_index(1)
+    |> Enum.map(fn {room, index} ->
+      [
+        Integer.to_string(index),
+        ") ",
+        room.name,
+        " [",
+        Atom.to_string(room.rarity),
+        "] doors ",
+        doors_summary(room),
+        " — ",
+        Integer.to_string(room.gem_cost),
+        " gems"
+      ]
+    end)
+    |> Enum.intersperse("\n")
+  end
+
+  defp doors_summary(room) do
+    for direction <- [:north, :east, :south, :west],
+        state = room.doors[direction],
+        state != nil do
+      [door_letter(direction), lock_mark(state)]
+    end
+    |> Enum.intersperse(",")
+  end
+
+  defp door_letter(:north), do: "n"
+  defp door_letter(:east), do: "e"
+  defp door_letter(:south), do: "s"
+  defp door_letter(:west), do: "w"
+
+  defp lock_mark(:open), do: ""
+  defp lock_mark(:locked), do: "*"
 
   @doc """
   One log entry as prose. Pattern matching as translation — every entry
@@ -117,8 +194,17 @@ defmodule Manor.Render do
       {:day_over, :out_of_steps}   -> "Your legs give out. The day is over."
   """
   @spec describe(term()) :: iodata()
-  def describe(_entry) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Render.describe/1")
-  end
+  def describe({:moved, coord}), do: ["Moved to ", inspect(coord), "."]
+  def describe({:drafting, coord}), do: ["An unbuilt room at ", inspect(coord), " — draft!"]
+  def describe({:placed, id, _coord}), do: ["Built the ", humanize(id), "."]
+  def describe({:granted, kind, n}), do: ["+", Integer.to_string(n), " ", Atom.to_string(kind)]
+  def describe({:received, item}), do: ["Received: ", humanize(item), "."]
+  def describe({:bought, offer}), do: ["Bought ", humanize(offer), "."]
+  def describe({:crafted, item}), do: ["Crafted: ", humanize(item), "!"]
+  def describe({:unlocked, :key}), do: "The key turns. The door stays open."
+  def describe({:unlocked, :lockpick}), do: "The lockpick snaps, but the door is open."
+  def describe({:won, _coord}), do: "The Antechamber. You made it."
+  def describe({:day_over, :out_of_steps}), do: "Your legs give out. The day is over."
+
+  defp humanize(atom), do: atom |> Atom.to_string() |> String.replace("_", " ")
 end

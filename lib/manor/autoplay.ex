@@ -20,9 +20,21 @@ defmodule Manor.Autoplay do
   `Game.over?/1` is the other exit.
   """
   @spec run(module(), RunConfig.t(), non_neg_integer()) :: Game.t()
-  def run(strategy, %RunConfig{} = _config, max_commands)
+  def run(strategy, %RunConfig{} = config, max_commands)
       when is_atom(strategy) and is_integer(max_commands) and max_commands >= 0 do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Autoplay.run/3")
+    drive(strategy, Game.new(config), max_commands)
+  end
+
+  defp drive(_strategy, game, 0), do: game
+
+  defp drive(strategy, game, remaining) do
+    if Game.over?(game) do
+      game
+    else
+      case Game.command(game, strategy.next_command(game)) do
+        {:ok, game} -> drive(strategy, game, remaining - 1)
+        {:error, _bumped} -> drive(strategy, game, remaining - 1)
+      end
+    end
   end
 end

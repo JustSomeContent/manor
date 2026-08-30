@@ -29,4 +29,37 @@
 #    Collapse `{:drafting, %Draft{}}` to just `:drafting` — the point is a
 #    one-line summary, not the whole truth (`view/1` has the whole truth).
 #
-# TODO(Part 9)
+defimpl String.Chars, for: Manor.Resources do
+  def to_string(resources) do
+    "Steps #{resources.steps} | Keys #{resources.keys} | " <>
+      "Gems #{resources.gems} | Coins #{resources.coins}"
+  end
+end
+
+defimpl String.Chars, for: Manor.Room do
+  def to_string(room), do: "#{room.name} (#{room.rarity})"
+end
+
+defimpl Inspect, for: Manor.Game do
+  import Inspect.Algebra
+
+  def inspect(game, opts) do
+    phase =
+      case game.phase do
+        {:drafting, _draft} -> :drafting
+        other -> other
+      end
+
+    concat([
+      "#Manor.Game<turn: ",
+      to_doc(game.turn, opts),
+      ", at: ",
+      to_doc(game.player, opts),
+      ", steps: ",
+      to_doc(game.resources.steps, opts),
+      ", phase: ",
+      to_doc(phase, opts),
+      ">"
+    ])
+  end
+end

@@ -49,25 +49,35 @@ defmodule Manor.Strategy.Greedy do
 
   @behaviour Manor.Strategy
 
-  alias Manor.Game
+  alias Manor.{Game, Mansion, Resources, Room}
 
-  @doc """
-  ## Part 9 hints
-  Two phase clauses, like Random.
-
-  Drafting: `Enum.find_index/2` for the first affordable candidate
-  (`gem_cost <= gems`) with a north door, `||` the first affordable one,
-  `||` index 0; `{:choose, index + 1}`.
-
-  Walking: collect `{direction, Manor.Mansion.passage(...)}` for the four
-  directions (a comprehension with a filter dropping `:wall` reads well),
-  then prefer — in order — a non-south `{:unbuilt, _, _}` (the frontier!),
-  a built `:north`, any first passage; `{:move, :north}` as the desperate
-  fallback (it will be rejected; the bot survives rejection).
-  """
   @impl Manor.Strategy
-  def next_command(%Game{} = _game) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.Strategy.Greedy.next_command/1")
+  def next_command(%Game{phase: {:drafting, draft}} = game) do
+    gems = Resources.get(game.resources, :gems)
+    affordable? = fn room -> room.gem_cost <= gems end
+
+    index =
+      Enum.find_index(draft.candidates, &(affordable?.(&1) and Room.has_door?(&1, :north))) ||
+        Enum.find_index(draft.candidates, affordable?) ||
+        0
+
+    {:choose, index + 1}
+  end
+
+  def next_command(%Game{} = game) do
+    passages =
+      for direction <- [:north, :east, :west, :south],
+          passage = Mansion.passage(game.mansion, game.player, direction),
+          passage != :wall,
+          do: {direction, passage}
+
+    frontier = Enum.find(passages, fn {d, p} -> d != :south and match?({:unbuilt, _, _}, p) end)
+    north = Enum.find(passages, fn {d, _p} -> d == :north end)
+    fallback = List.first(passages)
+
+    case frontier || north || fallback do
+      {direction, _passage} -> {:move, direction}
+      nil -> {:move, :north}
+    end
   end
 end

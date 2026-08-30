@@ -35,7 +35,47 @@ defmodule Manor.CLI.Parser do
   """
   @spec parse(String.t()) :: {:ok, parsed()} | {:error, :unknown_command}
   def parse(line) when is_binary(line) do
-    # TODO(Part 9)
-    Manor.NotImplemented.todo!(part: 9, fun: "Manor.CLI.Parser.parse/1")
+    line |> String.trim() |> String.downcase() |> do_parse()
+  end
+
+  defp do_parse("n"), do: {:ok, {:move, :north}}
+  defp do_parse("north"), do: {:ok, {:move, :north}}
+  defp do_parse("s"), do: {:ok, {:move, :south}}
+  defp do_parse("south"), do: {:ok, {:move, :south}}
+  defp do_parse("e"), do: {:ok, {:move, :east}}
+  defp do_parse("east"), do: {:ok, {:move, :east}}
+  defp do_parse("w"), do: {:ok, {:move, :west}}
+  defp do_parse("west"), do: {:ok, {:move, :west}}
+  defp do_parse("look"), do: {:ok, :look}
+  defp do_parse("help"), do: {:ok, :help}
+  defp do_parse("quit"), do: {:ok, :quit}
+
+  defp do_parse(<<"buy ", rest::binary>>) do
+    with {:ok, offer_id} <- existing_atom(String.trim(rest)) do
+      {:ok, {:buy, offer_id}}
+    end
+  end
+
+  defp do_parse(<<"combine ", rest::binary>>) do
+    with [a, b] <- String.split(rest),
+         {:ok, item_a} <- existing_atom(a),
+         {:ok, item_b} <- existing_atom(b) do
+      {:ok, {:combine, item_a, item_b}}
+    else
+      _ -> {:error, :unknown_command}
+    end
+  end
+
+  defp do_parse(line) do
+    case Integer.parse(line) do
+      {index, ""} when index > 0 -> {:ok, {:choose, index}}
+      _ -> {:error, :unknown_command}
+    end
+  end
+
+  defp existing_atom(word) do
+    {:ok, String.to_existing_atom(word)}
+  rescue
+    ArgumentError -> {:error, :unknown_command}
   end
 end
