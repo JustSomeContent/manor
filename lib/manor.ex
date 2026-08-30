@@ -7,7 +7,8 @@ defmodule Manor do
   sight from the caller's side.
   """
 
-  alias Manor.Game
+  alias Manor.{Game, RunConfig}
+  alias Manor.Game.Server
 
   @doc """
   The Part 0 warm-up: returns `:welcome`.
@@ -22,7 +23,6 @@ defmodule Manor do
     :welcome
   end
 
-  @spec start_run(any(), any()) :: none()
   @doc """
   Start a supervised run named `name` (any string) with the given options
   (`:seed` required — see `Manor.RunConfig.default/1`).
@@ -35,8 +35,12 @@ defmodule Manor do
   """
   @spec start_run(String.t(), keyword()) :: DynamicSupervisor.on_start_child()
   def start_run(name, opts) when is_binary(name) and is_list(opts) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.start_run/2")
+    config = RunConfig.default(opts)
+
+    DynamicSupervisor.start_child(
+      Manor.RunSupervisor,
+      {Server, name: name, config: config}
+    )
   end
 
   @doc """
@@ -48,8 +52,10 @@ defmodule Manor do
   """
   @spec stop_run(String.t()) :: :ok | {:error, :no_such_run}
   def stop_run(name) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.stop_run/1")
+    case Registry.lookup(Manor.RunRegistry, name) do
+      [{pid, _value}] -> DynamicSupervisor.terminate_child(Manor.RunSupervisor, pid)
+      [] -> {:error, :no_such_run}
+    end
   end
 
   @doc """
@@ -62,8 +68,7 @@ defmodule Manor do
   """
   @spec runs() :: [String.t()]
   def runs do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.runs/0")
+    Registry.select(Manor.RunRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end
 
   @doc """
@@ -74,7 +79,9 @@ defmodule Manor do
   """
   @spec view(String.t()) :: {:ok, Game.t()} | {:error, :no_such_run}
   def view(name) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.view/1")
+    case Registry.lookup(Manor.RunRegistry, name) do
+      [{pid, _value}] -> {:ok, GenServer.call(pid, :view)}
+      [] -> {:error, :no_such_run}
+    end
   end
 end

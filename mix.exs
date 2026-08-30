@@ -13,11 +13,17 @@ defmodule Manor.MixProject do
   end
 
   def application do
-    [
-      extra_applications: [:logger]
-      # TODO(Part 8): uncomment to boot the supervision tree with the app.
-      # mod: {Manor.Application, []}
-    ]
+    # The tree boots with the app everywhere except :test, where the part-8
+    # suite starts its own Registry/DynamicSupervisor per test — two owners
+    # of a globally-named process can't coexist.
+    if Mix.env() == :test do
+      [extra_applications: [:logger]]
+    else
+      [
+        extra_applications: [:logger],
+        mod: {Manor.Application, []}
+      ]
+    end
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]

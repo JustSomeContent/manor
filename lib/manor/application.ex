@@ -23,7 +23,11 @@ defmodule Manor.Application do
   """
   @impl Application
   def start(_type, _args) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Application.start/2")
+    children = [
+      {Registry, keys: :unique, name: Manor.RunRegistry},
+      {DynamicSupervisor, name: Manor.RunSupervisor, strategy: :one_for_one}
+    ]
+
+    Supervisor.start_link(children, strategy: :one_for_one, name: Manor.Supervisor)
   end
 end

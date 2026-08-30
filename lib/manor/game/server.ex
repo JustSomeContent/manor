@@ -35,41 +35,39 @@ defmodule Manor.Game.Server do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) when is_list(opts) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.start_link/1")
+    name = Keyword.fetch!(opts, :name)
+    config = Keyword.fetch!(opts, :config)
+    GenServer.start_link(__MODULE__, config, name: via(name))
   end
 
   @doc "Each client function is one `GenServer.call/2` through the via tuple."
   @spec move(String.t(), Grid.direction()) :: {:ok, Game.t()} | {:error, Game.error()}
-  def move(name, _direction) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.move/2")
+  def move(name, direction) when is_binary(name) do
+    GenServer.call(via(name), {:move, direction})
   end
 
   @spec choose(String.t(), pos_integer()) :: {:ok, Game.t()} | {:error, Game.error()}
-  def choose(name, _index) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.choose/2")
+  def choose(name, index) when is_binary(name) do
+    GenServer.call(via(name), {:choose, index})
   end
 
   @spec buy(String.t(), atom()) :: {:ok, Game.t()} | {:error, Game.error()}
-  def buy(name, _offer_id) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.buy/2")
+  def buy(name, offer_id) when is_binary(name) do
+    GenServer.call(via(name), {:buy, offer_id})
   end
 
   @spec combine(String.t(), Manor.Item.id(), Manor.Item.id()) ::
           {:ok, Game.t()} | {:error, Game.error()}
-  def combine(name, _a, _b) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.combine/3")
+  def combine(name, a, b) when is_binary(name) do
+    GenServer.call(via(name), {:combine, a, b})
   end
 
   @spec view(String.t()) :: Game.t()
   def view(name) when is_binary(name) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.view/1")
+    GenServer.call(via(name), :view)
   end
+
+  defp via(name), do: {:via, Registry, {Manor.RunRegistry, name}}
 
   ## Server callbacks
 
@@ -86,14 +84,15 @@ defmodule Manor.Game.Server do
   let-it-crash working as intended, not a case to handle.
   """
   @impl GenServer
-  def init(%RunConfig{} = _config) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.init/1")
-  end
+  def init(%RunConfig{} = config), do: {:ok, Game.new(config)}
 
   @impl GenServer
-  def handle_call(_request, _from, _game) do
-    # TODO(Part 8)
-    Manor.NotImplemented.todo!(part: 8, fun: "Manor.Game.Server.handle_call/3")
+  def handle_call(:view, _from, game), do: {:reply, game, game}
+
+  def handle_call(command, _from, game) do
+    case Game.command(game, command) do
+      {:ok, new_game} -> {:reply, {:ok, new_game}, new_game}
+      {:error, _reason} = error -> {:reply, error, game}
+    end
   end
 end
